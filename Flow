@@ -1,0 +1,38 @@
+# Flow
+
+Flow is a personal money management web app designed to help users understand, organize, and plan their finances in one place.
+
+## Features
+
+- Income and expense tracking
+- Transaction categories
+- Monthly and yearly income tracking
+- Budget management
+- Subscription tracking and editing
+- Recurring payment tracking
+- Bill management
+- Savings goals
+- Group expense splitting
+- Automatic group settlements
+- Financial analytics
+- Spending by category
+- Financial calendar
+- Upcoming, due-soon, and overdue payments
+- Financial insights
+
+## Current Status
+
+Flow is currently a prototype being developed and tested with early users.
+
+The current version stores data locally in the user's browser. A backend, authentication, cloud database, and additional security features are planned for future versions.
+
+## Testing
+
+Please use sample/fake financial information while testing the prototype.
+
+## Built With
+
+- HTML
+- CSS
+- JavaScript
+- LocalStorage
