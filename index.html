@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Flow — Money Management</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="topbar">
+        <div class="logo">
+            <span>F</span>
+            Flow
+        </div>
+
+        <div class="profile">
+            <div class="avatar">N</div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section class="welcome">
+            <p>Good afternoon 👋</p>
+            <h1>Your money at a glance.</h1>
+        </section>
+
+        <!-- OVERVIEW -->
+
+        <section class="overview">
+
+            <div class="card balance-card">
+                <p>Current Balance</p>
+                <h2 id="balance">$0.00</h2>
+                <span id="balanceChange">No transactions yet</span>
+            </div>
+
+            <div class="card">
+                <p>Income</p>
+                <h2 id="income">$0.00</h2>
+                <span class="positive">This month</span>
+            </div>
+
+            <div class="card">
+                <p>Expenses</p>
+                <h2 id="expenses">$0.00</h2>
+                <span class="negative">This month</span>
+            </div>
+
+            <div class="card">
+                <p>Upcoming</p>
+                <h2 id="upcoming">$0.00</h2>
+                <span>Next 30 days</span>
+            </div>
+
+        </section>
+
+
+        <!-- MAIN GRID -->
+
+        <section class="dashboard-grid">
+
+            <!-- TRANSACTIONS -->
+
+            <div class="panel transactions">
+
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">ACTIVITY</p>
+                        <h2>Recent Transactions</h2>
+                    </div>
+
+                    <button onclick="openTransactionModal()">
+                        + Add
+                    </button>
+                </div>
+
+                <div id="transactionList" class="transaction-list">
+                    <p class="empty">No transactions yet.</p>
+                </div>
+
+            </div>
+
+
+            <!-- BUDGET -->
+<section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+            <p class="eyebrow">PLAN</p>
+            <h2>Budgets</h2>
+        </div>
+
+       <button onclick="openBudgetModal()">
+    + Add Budget
+</button>
+
+    </div>
+
+
+    <div id="budgetList">
+
+        <!-- Budgets appear here -->
+
+    </div>
+
+</section>
+
+
+        <!-- SECOND ROW -->
+
+        <section class="dashboard-grid">
+
+            <!-- SUBSCRIPTIONS -->
+
+            <div class="panel">
+
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">RECURRING</p>
+                        <h2>Subscriptions</h2>
+                    </div>
+
+                    <button onclick="openSubscriptionModal()">
+                        + Add
+                    </button>
+                </div>
+
+                <div id="subscriptionList"></div>
+
+            </div>
+
+
+            <!-- BILLS -->
+
+            <div class="panel">
+
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">UPCOMING</p>
+                        <h2>Bills</h2>
+                    </div>
+
+                    <button onclick="openBillModal()">
+                        + Add
+                    </button>
+                </div>
+
+                <div id="billList"></div>
+
+            </div>
+
+        </section>
+
+
+        <!-- SAVINGS -->
+
+        <section class="panel savings-panel">
+
+            <div class="panel-header">
+
+                <div>
+                    <p class="eyebrow">GOALS</p>
+                    <h2>Savings Goals</h2>
+                </div>
+
+                <button onclick="openGoalModal()">
+                    + Goal
+                </button>
+
+            </div>
+
+            <div id="goalList"></div>
+
+        </section>
+<!-- GROUP EXPENSES -->
+
+<section class="panel groups-panel">
+
+    <div class="panel-header">
+
+        <div>
+            <p class="eyebrow">SHARED MONEY</p>
+            <h2>Groups</h2>
+        </div>
+
+        <button onclick="openGroupModal()">
+            + Group
+        </button>
+
+    </div>
+
+    <div id="groupList">
+
+        <p class="empty">
+            Create a group to start splitting expenses.
+        </p>
+
+    </div>
+
+</section>
+    </main>
+
+<!-- BUDGET MODAL -->
+
+<div id="budgetModal" class="modal">
+
+    <div class="modal-box">
+
+        <button
+            class="close"
+            onclick="closeModal('budgetModal')"
+        >
+            ×
+        </button>
+
+        <h2>Add / Edit Budget</h2>
+
+        <form id="budgetForm">
+
+            <label>
+                Category
+
+                <input
+                    id="budgetCategory"
+                    placeholder="Food"
+                    required
+                >
+            </label>
+
+
+            <label>
+                Monthly Limit
+
+                <input
+                    id="budgetAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="500"
+                    required
+                >
+            </label>
+
+
+            <button
+                class="submit"
+                type="submit"
+            >
+                Save Budget
+            </button>
+
+        </form>
+
+    </div>
+
+</div>                                                                            
+    <!-- TRANSACTION MODAL -->
+
+    <div id="transactionModal" class="modal">
+
+        <div class="modal-box">
+
+            <button class="close" onclick="closeModal('transactionModal')">
+                ×
+            </button>
+
+            <h2>Add Transaction</h2>
+
+            <form id="transactionForm">
+
+                <label>
+                    Description
+                    <input id="transactionName" required>
+                </label>
+
+                <label>
+                    Amount
+                    <input id="transactionAmount"
+                           type="number"
+                           step="0.01"
+                           required>
+                </label>
+
+                <label>
+                    Type
+                    <select
+    id="transactionType"
+    onchange="updateTransactionCategories()"
+>
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                    </select>
+                </label>
+
+                <label>
+                    Category
+                    <select id="transactionCategory">
+                        <option>Food</option>
+                        <option>Transport</option>
+                        <option>Shopping</option>
+                        <option>Entertainment</option>
+                        <option>Bills</option>
+                        <option>Education</option>
+                        <option>Job</option>
+                        <option>Other</option>
+                    </select>
+                </label>
+
+                <button class="submit" type="submit">
+                    Add Transaction
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- SUBSCRIPTION MODAL -->
+
+ <!-- SUBSCRIPTION MODAL -->
+
+<div id="subscriptionModal" class="modal">
+
+    <div class="modal-box">
+
+        <button
+            class="close"
+            onclick="closeModal('subscriptionModal')"
+        >
+            ×
+        </button>
+
+        <h2>Add Subscription</h2>
+
+        <form id="subscriptionForm">
+<input
+    id="subscriptionEditId"
+    type="hidden"
+>
+            <label>
+                Subscription Name
+
+                <input
+                    id="subscriptionName"
+                    placeholder="Netflix"
+                    required
+                >
+            </label>
+
+            <label>
+                Amount
+
+                <input
+                    id="subscriptionAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="80"
+                    required
+                >
+            </label>
+
+            <label>
+                First Payment
+
+                <input
+                    id="subscriptionDate"
+                    type="date"
+                    required
+                >
+            </label>
+
+            <label>
+                Frequency
+
+                <select id="subscriptionFrequency">
+
+                    <option value="monthly">
+                        Monthly
+                    </option>
+
+                    <option value="weekly">
+                        Weekly
+                    </option>
+
+                    <option value="yearly">
+                        Yearly
+                    </option>
+
+                </select>
+
+            </label>
+
+            <button
+    id="subscriptionSubmit"
+    class="submit"
+    type="submit"
+>
+    Add Subscription
+</button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+    <!-- BILL MODAL -->
+
+    <div id="billModal" class="modal">
+
+        <div class="modal-box">
+
+            <button class="close" onclick="closeModal('billModal')">
+                ×
+            </button>
+
+            <h2>Add Bill</h2>
+
+            <form id="billForm">
+
+                <label>
+                    Bill Name
+                    <input id="billName" required>
+                </label>
+
+                <label>
+                    Amount
+                    <input id="billAmount"
+                           type="number"
+                           step="0.01"
+                           required>
+                </label>
+
+                <label>
+                    Due Date
+                    <input id="billDate"
+                           type="date"
+                           required>
+                </label>
+
+                <button class="submit" type="submit">
+                    Add Bill
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- GOAL MODAL -->
+
+    <div id="goalModal" class="modal">
+
+        <div class="modal-box">
+
+            <button class="close" onclick="closeModal('goalModal')">
+                ×
+            </button>
+
+            <h2>Create Savings Goal</h2>
+
+            <form id="goalForm">
+
+                <label>
+                    Goal Name
+                    <input id="goalName" required>
+                </label>
+
+                <label>
+                    Target Amount
+                    <input id="goalTarget"
+                           type="number"
+                           step="0.01"
+                           required>
+                </label>
+
+                <label>
+                    Current Savings
+                    <input id="goalCurrent"
+                           type="number"
+                           step="0.01"
+                           value="0">
+                </label>
+
+                <button class="submit" type="submit">
+                    Create Goal
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+<!-- GROUP MODAL -->
+
+<div id="groupModal" class="modal">
+
+    <div class="modal-box">
+
+        <button
+            class="close"
+            onclick="closeModal('groupModal')"
+        >
+            ×
+        </button>
+
+        <h2>Create Group</h2>
+
+        <form id="groupForm">
+
+            <label>
+                Group Name
+
+                <input
+                    id="groupName"
+                    placeholder="e.g. Tobago Trip"
+                    required
+                >
+            </label>
+
+            <label>
+                Members
+
+                <input
+                    id="groupMembers"
+                    placeholder="You, Alex, Jay, Sarah"
+                    required
+                >
+            </label>
+
+            <button
+                class="submit"
+                type="submit"
+            >
+                Create Group
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- GROUP EXPENSE MODAL -->
+
+<div id="groupExpenseModal" class="modal">
+
+    <div class="modal-box">
+
+        <button
+            class="close"
+            onclick="closeModal('groupExpenseModal')"
+        >
+            ×
+        </button>
+
+        <h2>Add Group Expense</h2>
+
+        <form id="groupExpenseForm">
+
+            <input
+                id="expenseGroupId"
+                type="hidden"
+            >
+
+            <label>
+                Expense Name
+
+                <input
+                    id="groupExpenseName"
+                    placeholder="Hotel"
+                    required
+                >
+            </label>
+
+            <label>
+                Amount
+
+                <input
+                    id="groupExpenseAmount"
+                    type="number"
+                    step="0.01"
+                    placeholder="800"
+                    required
+                >
+            </label>
+
+            <label>
+                Paid By
+
+                <select id="groupExpensePayer">
+                </select>
+            </label>
+
+            <button
+                class="submit"
+                type="submit"
+            >
+                Add Expense
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+<!-- ANALYTICS -->
+
+<section class="panel analytics-panel">
+
+    <div class="panel-header">
+
+        <div>
+            <p class="eyebrow">YOUR MONEY</p>
+            <h2>Analytics</h2>
+        </div>
+
+    </div>
+
+
+    <div class="analytics-grid">
+
+    <div class="analytics-card">
+
+        <span>Monthly Income</span>
+
+        <strong id="monthlyIncome">
+            $0.00
+        </strong>
+
+    </div>
+
+
+    <div class="analytics-card">
+
+        <span>Monthly Spending</span>
+
+        <strong id="monthlyExpenses">
+            $0.00
+        </strong>
+
+    </div>
+
+
+    <div class="analytics-card">
+
+        <span>Monthly Savings</span>
+
+        <strong id="monthlySavings">
+            $0.00
+        </strong>
+
+    </div>
+
+
+    <div class="analytics-card">
+
+        <span>Savings Rate</span>
+
+        <strong id="savingsRate">
+            0%
+        </strong>
+
+    </div>
+
+
+    <div class="analytics-card">
+
+        <span>Yearly Income</span>
+
+        <strong id="yearlyIncome">
+            $0.00
+        </strong>
+
+    </div>
+
+
+    <div class="analytics-card">
+
+        <span>Yearly Spending</span>
+
+        <strong id="yearlyExpenses">
+            $0.00
+        </strong>
+
+    </div>
+
+</div>
+
+
+    <!-- CATEGORY BREAKDOWN -->
+
+    <div class="analytics-section">
+
+        <h3>Spending by Category</h3>
+
+        <div id="categoryAnalytics">
+
+            <p class="empty">
+                Add expenses to see your spending breakdown.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- MONTHLY OVERVIEW -->
+
+    <div class="analytics-section">
+
+        <h3>Monthly Overview</h3>
+
+        <div id="monthlyAnalytics">
+
+            <p class="empty">
+                No monthly data yet.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- INSIGHTS -->
+
+    <div class="analytics-section">
+
+        <h3>Flow Insights</h3>
+
+        <div id="financialInsights">
+
+            <p class="empty">
+                Add some transactions and Flow will analyze them.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- FINANCIAL CALENDAR -->
+
+<section class="panel calendar-panel">
+
+    <div class="panel-header">
+
+        <div>
+            <p class="eyebrow">UPCOMING</p>
+            <h2>Financial Calendar</h2>
+        </div>
+
+    </div>
+
+
+    <div class="calendar-summary">
+
+        <div class="calendar-stat">
+
+            <span>Next 30 Days</span>
+
+            <strong id="upcoming30Days">
+                $0.00
+            </strong>
+
+        </div>
+
+
+        <div class="calendar-stat">
+
+            <span>Due Soon</span>
+
+            <strong id="dueSoonAmount">
+                $0.00
+            </strong>
+
+        </div>
+
+
+        <div class="calendar-stat">
+
+            <span>Overdue</span>
+
+            <strong id="overdueAmount">
+                $0.00
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div class="calendar-section">
+
+        <h3>Upcoming Payments</h3>
+
+        <div id="calendarPayments">
+
+            <p class="empty">
+                No upcoming payments.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+    <script src="app.js"></script>
+
+</body>
+</html>
