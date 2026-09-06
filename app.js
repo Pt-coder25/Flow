@@ -1,4056 +1,2085 @@
-// ========================================
-// FLOW — PART 3
-// ========================================
-
-
-// ========================================
-// DATA
-// ========================================
-
-let transactions =
-    JSON.parse(localStorage.getItem("flowTransactions")) || [];
-
-let subscriptions =
-    JSON.parse(localStorage.getItem("flowSubscriptions")) || [];
-
-let bills =
-    JSON.parse(localStorage.getItem("flowBills")) || [];
-
-let goals =
-    JSON.parse(localStorage.getItem("flowGoals")) || [];
-
-let groups =
-    JSON.parse(localStorage.getItem("flowGroups")) || [];
-
-
-// ========================================
-// BUDGETS
-// ========================================
-
-let budgets =
-    JSON.parse(
-        localStorage.getItem("flowBudgets")
-    ) || {
-
-        Food: 500,
-
-        Transport: 300,
-
-        Shopping: 400,
-
-        Entertainment: 300,
-
-        Bills: 500,
-
-        Education: 300,
-
-        Other: 200
-
-    };
-
-
-// ========================================
-// SAVE DATA
-// ========================================
-
-function saveData() {
-
-    localStorage.setItem(
-        "flowTransactions",
-        JSON.stringify(transactions)
-    );
-
-    localStorage.setItem(
-        "flowSubscriptions",
-        JSON.stringify(subscriptions)
-    );
-
-    localStorage.setItem(
-        "flowBills",
-        JSON.stringify(bills)
-    );
-
-    localStorage.setItem(
-        "flowGoals",
-        JSON.stringify(goals)
-    );
-
-    localStorage.setItem(
-        "flowGroups",
-        JSON.stringify(groups)
-    );
-    localStorage.setItem(
-    "flowBudgets",
-    JSON.stringify(budgets)
-    );
-}
-
-// ========================================
-// MODALS
-// ========================================
-
-function openTransactionModal() {
-
-    document
-        .getElementById("transactionModal")
-        .classList.add("active");
-
-}
-function updateTransactionCategories() {
-
-    const type =
-        document.getElementById(
-            "transactionType"
-        ).value;
-
-    const category =
-        document.getElementById(
-            "transactionCategory"
-        );
-
-    if (type === "income") {
-
-        category.innerHTML = `
-
-            <option>Job</option>
-            <option>Freelance</option>
-            <option>Side Hustle</option>
-            <option>Gift</option>
-            <option>Other</option>
-
-        `;
-
-    }
-
-    else {
-
-        category.innerHTML = `
-
-            <option>Food</option>
-            <option>Transport</option>
-            <option>Shopping</option>
-            <option>Entertainment</option>
-            <option>Bills</option>
-            <option>Education</option>
-            <option>Other</option>
-
-        `;
-
-    }
-
-}
-
-function openBillModal() {
-
-    document
-        .getElementById("billModal")
-        .classList.add("active");
-}
-
-
-function openGoalModal() {
-
-    document
-        .getElementById("goalModal")
-        .classList.add("active");
-}
-
-
-function openGroupModal() {
-
-    document
-        .getElementById("groupModal")
-        .classList.add("active");
-}
-
-
-function openGroupExpenseModal(groupId) {
-
-    const group =
-        groups.find(
-            group =>
-                group.id === groupId
-        );
-
-
-    if (!group) return;
-
-
-    const payerSelect =
-        document.getElementById(
-            "groupExpensePayer"
-        );
-
-
-    payerSelect.innerHTML =
-
-        group.members
-
-            .map(member => `
-
-                <option value="${member}">
-                    ${member}
-                </option>
-
-            `)
-
-            .join("");
-
-
-    document
-        .getElementById("expenseGroupId")
-        .value = groupId;
-
-
-    document
-        .getElementById("groupExpenseModal")
-        .classList.add("active");
-}
-
-
-function closeModal(id) {
-
-    document
-        .getElementById(id)
-        .classList.remove("active");
-}
-
-
-// ========================================
-// MONEY
-// ========================================
-
-function money(amount) {
-
-    return "$" +
-
-        amount.toLocaleString(
-            "en-US",
-            {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }
-        );
-}
-
-
-// ========================================
-// TRANSACTIONS
-// ========================================
-
-document
-    .getElementById("transactionForm")
-    .addEventListener(
-        "submit",
-        function(event) {
-
-            event.preventDefault();
-
-
-            const name =
-                document
-                    .getElementById(
-                        "transactionName"
-                    )
-                    .value
-                    .trim();
-
-
-            const amount =
-                Number(
-                    document
-                        .getElementById(
-                            "transactionAmount"
-                        )
-                        .value
-                );
-
-
-            const type =
-                document
-                    .getElementById(
-                        "transactionType"
-                    )
-                    .value;
-
-
-            const category =
-                document
-                    .getElementById(
-                        "transactionCategory"
-                    )
-                    .value;
-
-
-            if (amount <= 0) {
-
-                alert(
-                    "Please enter an amount greater than zero."
-                );
-
-                return;
-            }
-
-
-            transactions.unshift({
-
-                id: Date.now(),
-
-                name,
-
-                amount,
-
-                type,
-
-                category,
-
-                date:
-                    new Date().toISOString()
-                  
-
-            });
-
-
-            saveData();
-
-            render();
-
-            this.reset();
-
-            closeModal(
-                "transactionModal"
-            );
-
-        }
-    );
-
-
-// ========================================
-// DELETE TRANSACTION
-// ========================================
-
-function deleteTransaction(id) {
-
-    transactions =
-        transactions.filter(
-            transaction =>
-                transaction.id !== id
-        );
-
-
-    saveData();
-
-    render();
-}
-
-
-// ========================================
-// SUBSCRIPTIONS
-// ========================================
-
-document
-    .getElementById("subscriptionForm")
-    .addEventListener(
-        "submit",
-        function(event) {
-
-            event.preventDefault();
-
-
-            const name =
-                document
-                    .getElementById(
-                        "subscriptionName"
-                    )
-                    .value
-                    .trim();
-
-
-            const amount =
-                Number(
-                    document
-                        .getElementById(
-                            "subscriptionAmount"
-                        )
-                        .value
-                );
-
-
-            const date =
-                document
-                    .getElementById(
-                        "subscriptionDate"
-                    )
-                    .value;
-
-
-            if (amount <= 0) {
-
-                alert(
-                    "Please enter a valid subscription price."
-                );
-
-                return;
-            }
-
-
-const frequency =
-    document
-        .getElementById(
-            "subscriptionFrequency"
-        )
-        .value;
-
-
-subscriptions.push({
-
-    id: Date.now(),
-
-    name,
-
-    amount,
-
-    date,
-
-    frequency,
-
-    active: true
-
-});
-
-
-            saveData();
-
-            render();
-
-            this.reset();
-
-            closeModal(
-                "subscriptionModal"
-            );
-
-        }
-    );
-
-
-// ========================================
-// DELETE SUBSCRIPTION
-// ========================================
-
-function deleteSubscription(id) {
-
-    subscriptions =
-        subscriptions.filter(
-            subscription =>
-                subscription.id !== id
-        );
-
-
-    saveData();
-
-    render();
-}
-function toggleSubscription(id) {
-
-    const subscription =
-        subscriptions.find(
-            subscription =>
-                subscription.id === id
-        );
-
-    if (!subscription) return;
-
-    subscription.active =
-        subscription.active === false;
-
-    saveData();
-
-    render();
-}
-
-// ========================================
-// SUBSCRIPTION TOTALS
-// ========================================
-
-function calculateMonthlySubscriptions() {
-
-    return subscriptions.reduce(
-
-        (total, subscription) => {
-
-            if (
-                subscription.active === false
-            ) {
-                return total;
-            }
-
-            if (
-                subscription.frequency === "weekly"
-            ) {
-
-                return total +
-                    (
-                        subscription.amount *
-                        52 /
-                        12
-                    );
-
-            }
-
-            if (
-                subscription.frequency === "yearly"
-            ) {
-
-                return total +
-                    (
-                        subscription.amount /
-                        12
-                    );
-
-            }
-
-            return total +
-                subscription.amount;
-
-        },
-
-        0
-
-    );
-
-}
-
-
-function calculateYearlySubscriptions() {
-
-    return calculateMonthlySubscriptions()
-        * 12;
-}
-
-
-// ========================================
-// BILLS
-// ========================================
-
-document
-    .getElementById("billForm")
-    .addEventListener(
-        "submit",
-        function(event) {
-
-            event.preventDefault();
-
-
-            const name =
-                document
-                    .getElementById(
-                        "billName"
-                    )
-                    .value
-                    .trim();
-
-
-            const amount =
-                Number(
-                    document
-                        .getElementById(
-                            "billAmount"
-                        )
-                        .value
-                );
-
-
-            const date =
-                document
-                    .getElementById(
-                        "billDate"
-                    )
-                    .value;
-
-
-            if (amount <= 0) {
-
-                alert(
-                    "Please enter a valid bill amount."
-                );
-
-                return;
-            }
-
-
-            bills.push({
-
-                id: Date.now(),
-
-                name,
-
-                amount,
-
-                date
-
-            });
-
-
-            saveData();
-
-            render();
-
-            this.reset();
-
-            closeModal(
-                "billModal"
-            );
-
-        }
-    );
-
-
-// ========================================
-// DELETE BILL
-// ========================================
-
-function deleteBill(id) {
-
-    bills =
-        bills.filter(
-            bill =>
-                bill.id !== id
-        );
-
-
-    saveData();
-
-    render();
-}
-
-
-// ========================================
-// SAVINGS GOALS
-// ========================================
-
-document
-    .getElementById("goalForm")
-    .addEventListener(
-        "submit",
-        function(event) {
-
-            event.preventDefault();
-
-
-            const name =
-                document
-                    .getElementById(
-                        "goalName"
-                    )
-                    .value
-                    .trim();
-
-
-            const target =
-                Number(
-                    document
-                        .getElementById(
-                            "goalTarget"
-                        )
-                        .value
-                );
-
-
-            const current =
-                Number(
-                    document
-                        .getElementById(
-                            "goalCurrent"
-                        )
-                        .value
-                );
-
-
-            if (target <= 0) {
-
-                alert(
-                    "Your target must be greater than zero."
-                );
-
-                return;
-            }
-
-
-            goals.push({
-
-                id: Date.now(),
-
-                name,
-
-                target,
-
-                current
-
-            });
-
-
-            saveData();
-
-            render();
-
-            this.reset();
-
-            closeModal(
-                "goalModal"
-            );
-
-        }
-    );
-
-
-// ========================================
-// DELETE GOAL
-// ========================================
-
-function deleteGoal(id) {
-
-    goals =
-        goals.filter(
-            goal =>
-                goal.id !== id
-        );
-
-
-    saveData();
-
-    render();
-}
-
-
-// ========================================
-// GROUPS
-// ========================================
-
-document
-    .getElementById("groupForm")
-    .addEventListener(
-        "submit",
-        function(event) {
-
-            event.preventDefault();
-
-
-            const name =
-                document
-                    .getElementById(
-                        "groupName"
-                    )
-                    .value
-                    .trim();
-
-
-            const membersText =
-                document
-                    .getElementById(
-                        "groupMembers"
-                    )
-                    .value;
-
-
-            const members =
-                membersText
-
-                    .split(",")
-
-                    .map(
-                        member =>
-                            member.trim()
-                    )
-
-                    .filter(
-                        member =>
-                            member.length > 0
-                    );
-
-
-            if (members.length < 2) {
-
-                alert(
-                    "A group needs at least two members."
-                );
-
-                return;
-            }
-
-
-            groups.push({
-
-                id: Date.now(),
-
-                name,
-
-                members,
-
-                expenses: []
-
-            });
-
-
-            saveData();
-
-            render();
-
-            this.reset();
-
-            closeModal(
-                "groupModal"
-            );
-
-        }
-    );
-
-
-// ========================================
-// GROUP EXPENSES
-// ========================================
-
-document
-    .getElementById("groupExpenseForm")
-    .addEventListener(
-        "submit",
-        function(event) {
-
-            event.preventDefault();
-
-
-            const groupId =
-                Number(
-                    document
-                        .getElementById(
-                            "expenseGroupId"
-                        )
-                        .value
-                );
-
-
-            const name =
-                document
-                    .getElementById(
-                        "groupExpenseName"
-                    )
-                    .value
-                    .trim();
-
-
-            const amount =
-                Number(
-                    document
-                        .getElementById(
-                            "groupExpenseAmount"
-                        )
-                        .value
-                );
-
-
-            const payer =
-                document
-                    .getElementById(
-                        "groupExpensePayer"
-                    )
-                    .value;
-
-
-            if (amount <= 0) {
-
-                alert(
-                    "Expense must be greater than zero."
-                );
-
-                return;
-            }
-
-
-            const group =
-                groups.find(
-                    group =>
-                        group.id === groupId
-                );
-
-
-            if (!group) return;
-
-
-            group.expenses.push({
-
-                id: Date.now(),
-
-                name,
-
-                amount,
-
-                payer
-
-            });
-
-
-            saveData();
-
-            render();
-
-            this.reset();
-
-            closeModal(
-                "groupExpenseModal"
-            );
-
-        }
-    );
-
-
-// ========================================
-// DELETE GROUP
-// ========================================
-
-function deleteGroup(id) {
-
-    groups =
-        groups.filter(
-            group =>
-                group.id !== id
-        );
-
-
-    saveData();
-
-    render();
-}
-
-
-// ========================================
-// DELETE GROUP EXPENSE
-// ========================================
-
-function deleteGroupExpense(
-    groupId,
-    expenseId
-) {
-
-    const group =
-        groups.find(
-            group =>
-                group.id === groupId
-        );
-
-
-    if (!group) return;
-
-
-    group.expenses =
-        group.expenses.filter(
-            expense =>
-                expense.id !== expenseId
-        );
-
-
-    saveData();
-
-    render();
-}
-
-
-// ========================================
-// CALCULATE GROUP SETTLEMENT
-// ========================================
-
-function calculateSettlements(group) {
-
-    const members =
-        group.members;
-
-
-    const expenses =
-        group.expenses;
-
-
-    if (expenses.length === 0) {
-
-        return [];
-    }
-
-
-    // Total amount spent
-
-    const total =
-        expenses.reduce(
-
-            (sum, expense) =>
-
-                sum + expense.amount,
-
-            0
-        );
-
-
-    // Everyone's equal share
-
-    const share =
-        total / members.length;
-
-
-    // How much each person actually paid
-
-    const paid = {};
-
-
-    members.forEach(
-        member => {
-
-            paid[member] = 0;
-
-        }
-    );
-
-
-    expenses.forEach(
-        expense => {
-
-            paid[expense.payer] +=
-                expense.amount;
-
-        }
-    );
-
-
-    // Positive = person should receive money
-    // Negative = person owes money
-
-    const balances = {};
-
-
-    members.forEach(
-        member => {
-
-            balances[member] =
-                paid[member] - share;
-
-        }
-    );
-
-
-    const creditors = [];
-
-    const debtors = [];
-
-
-    members.forEach(
-        member => {
-
-            if (balances[member] > 0.01) {
-
-                creditors.push({
-
-                    name: member,
-
-                    amount:
-                        balances[member]
-
-                });
-
-            }
-
-            else if (
-                balances[member] < -0.01
-            ) {
-
-                debtors.push({
-
-                    name: member,
-
-                    amount:
-                        -balances[member]
-
-                });
-
-            }
-
-        }
-    );
-
-
-    const settlements = [];
-
-
-    let debtorIndex = 0;
-
-    let creditorIndex = 0;
-
-
-    while (
-
-        debtorIndex < debtors.length &&
-
-        creditorIndex < creditors.length
-
-    ) {
-
-        const debtor =
-            debtors[debtorIndex];
-
-
-        const creditor =
-            creditors[creditorIndex];
-
-
-        const amount =
-            Math.min(
-                debtor.amount,
-                creditor.amount
-            );
-
-
-        settlements.push({
-
-            from: debtor.name,
-
-            to: creditor.name,
-
-            amount: amount
-
-        });
-
-
-        debtor.amount -= amount;
-
-        creditor.amount -= amount;
-
-
-        if (
-            debtor.amount < 0.01
-        ) {
-
-            debtorIndex++;
-
-        }
-
-
-        if (
-            creditor.amount < 0.01
-        ) {
-
-            creditorIndex++;
-
-        }
-
-    }
-
-
-    return settlements;
-}
-
-
-// ========================================
-// GROUP RENDERING
-// ========================================
-
-function renderGroups() {
-
-    const container =
-        document.getElementById(
-            "groupList"
-        );
-
-
-    if (groups.length === 0) {
-
-        container.innerHTML =
-            `<p class="empty">
-
-                Create a group to start
-                splitting expenses.
-
-            </p>`;
-
-        return;
-    }
-
-
-    container.innerHTML =
-
-        groups
-
-            .map(group => {
-
-
-                const total =
-
-                    group.expenses.reduce(
-
-                        (sum, expense) =>
-
-                            sum + expense.amount,
-
-                        0
-
-                    );
-
-
-                const settlements =
-                    calculateSettlements(group);
-
-
-                return `
-
-                <div
-                    style="
-                        border:1px solid #eee;
-                        border-radius:14px;
-                        padding:18px;
-                        margin-bottom:15px;
-                    "
-                >
-
-                    <div
-                        style="
-                            display:flex;
-                            justify-content:space-between;
-                            align-items:center;
-                            margin-bottom:12px;
-                        "
-                    >
-
-                        <div>
-
-                            <div
-                                style="
-                                    font-weight:700;
-                                    font-size:17px;
-                                "
-                            >
-
-                                ${group.name}
-
-                            </div>
-
-
-                            <div
-                                style="
-                                    font-size:12px;
-                                    color:#888;
-                                    margin-top:4px;
-                                "
-                            >
-
-                                ${group.members.join(", ")}
-
-                            </div>
-
-                        </div>
-
-
-                        <strong>
-
-                            ${money(total)}
-
-                        </strong>
-
-                    </div>
-
-
-                    <div
-                        style="
-                            display:flex;
-                            gap:8px;
-                            flex-wrap:wrap;
-                            margin-bottom:15px;
-                        "
-                    >
-
-                        <button
-                            onclick="openGroupExpenseModal(${group.id})"
-                        >
-
-                            + Expense
-
-                        </button>
-
-
-                        <button
-                            onclick="deleteGroup(${group.id})"
-                            style="
-                                background:#eee;
-                                color:#222;
-                            "
-                        >
-
-                            Delete
-
-                        </button>
-
-                    </div>
-
-
-                    ${
-                        group.expenses.length === 0
-
-                        ?
-
-                        `<p
-                            style="
-                                color:#999;
-                                font-size:13px;
-                            "
-                        >
-
-                            No expenses yet.
-
-                        </p>`
-
-                        :
-
-                        group.expenses
-
-                            .map(expense => `
-
-                                <div
-                                    style="
-                                        display:flex;
-                                        justify-content:space-between;
-                                        align-items:center;
-                                        padding:9px 0;
-                                        border-top:1px solid #eee;
-                                        font-size:13px;
-                                    "
-                                >
-
-                                    <span>
-
-                                        ${expense.name}
-
-                                        <span
-                                            style="
-                                                color:#888;
-                                            "
-                                        >
-
-                                            •
-                                            ${expense.payer}
-                                            paid
-
-                                        </span>
-
-                                    </span>
-
-
-                                    <span>
-
-                                        ${money(expense.amount)}
-
-                                        <button
-                                            onclick="
-                                                deleteGroupExpense(
-                                                    ${group.id},
-                                                    ${expense.id}
-                                                )
-                                            "
-                                            style="
-                                                margin-left:6px;
-                                                padding:3px 6px;
-                                                background:#eee;
-                                                color:#222;
-                                            "
-                                        >
-
-                                            ×
-
-                                        </button>
-
-                                    </span>
-
-                                </div>
-
-                            `)
-
-                            .join("")
-
-                    }
-
-
-                    ${
-                        settlements.length > 0
-
-                        ?
-
-                        `
-
-                        <div
-                            style="
-                                margin-top:15px;
-                                padding-top:15px;
-                                border-top:1px solid #eee;
-                            "
-                        >
-
-                            <div
-                                style="
-                                    font-size:11px;
-                                    letter-spacing:1px;
-                                    color:#888;
-                                    margin-bottom:8px;
-                                "
-                            >
-
-                                SETTLEMENTS
-
-                            </div>
-
-
-                            ${
-                                settlements
-
-                                    .map(
-                                        settlement => `
-
-                                            <div
-                                                style="
-                                                    display:flex;
-                                                    justify-content:space-between;
-                                                    padding:7px 0;
-                                                    font-size:13px;
-                                                "
-                                            >
-
-                                                <span>
-
-                                                    ${settlement.from}
-
-                                                    →
-                                                    
-                                                    ${settlement.to}
-
-                                                </span>
-
-
-                                                <strong>
-
-                                                    ${money(
-                                                        settlement.amount
-                                                    )}
-
-                                                </strong>
-
-                                            </div>
-
-                                        `
-                                    )
-
-                                    .join("")
-                            }
-
-                        </div>
-
-                        `
-
-                        :
-
-                        ""
-
-                    }
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Crest Financial — personal financial planning and money management."
+    >
+
+    <meta
+        name="theme-color"
+        content="#111111"
+    >
+
+    <title>Crest Financial — Your Money at a Glance</title>
+
+    <!--
+        IMPORTANT:
+        For production, this should be delivered as an HTTP
+        Content-Security-Policy header by your server/CDN.
+
+        This meta policy is only an additional browser-side
+        protection for the prototype.
+    -->
+    <meta
+        http-equiv="Content-Security-Policy"
+        content="
+            default-src 'self';
+            script-src 'self';
+            style-src 'self';
+            img-src 'self' data:;
+            font-src 'self';
+            connect-src 'self';
+            object-src 'none';
+            base-uri 'self';
+            form-action 'self';
+        "
+    >
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+</head>
+
+<body>
+
+<!-- =====================================================
+     APP
+===================================================== -->
+
+<div id="app">
+
+    <!-- =================================================
+         HEADER
+    ================================================== -->
+
+    <header class="topbar">
+
+        <div class="brand">
+
+            <a href="#overview" class="brand-logo">
+                <div class="brand-mark" role="img" aria-label="Crest Financial logo">
+                    <svg class="crest-signature" viewBox="0 0 80 52" aria-hidden="true">
+                        <text class="signature-f" x="28" y="40">F</text>
+                        <text class="signature-c" x="12" y="34">C</text>
+                    </svg>
                 </div>
 
-                `;
-
-            })
-
-            .join("");
-}
-
-
-// ========================================
-// MONEY CALCULATIONS
-// ========================================
-
-function calculateIncome() {
-
-    return transactions
-
-        .filter(
-            transaction =>
-                transaction.type === "income"
-        )
-
-        .reduce(
-
-            (total, transaction) =>
-
-                total + transaction.amount,
-
-            0
-
-        );
-}
-function calculateMonthlyIncome() {
-
-    const now = new Date();
-
-    const month =
-        now.getMonth();
-
-    const year =
-        now.getFullYear();
-
-
-    return transactions
-
-        .filter(transaction => {
-
-            if (
-                transaction.type !== "income"
-            ) {
-                return false;
-            }
-
-            const date =
-                new Date(transaction.date);
-
-            return (
-                date.getMonth() === month &&
-                date.getFullYear() === year
-            );
-
-        })
-
-        .reduce(
-            (total, transaction) =>
-                total + transaction.amount,
-            0
-        );
-}
-function calculateMonthlyExpenses() {
-
-    const now = new Date();
-
-    const month =
-        now.getMonth();
-
-    const year =
-        now.getFullYear();
-
-
-    return transactions
-
-        .filter(transaction => {
-
-            if (
-                transaction.type !== "expense"
-            ) {
-                return false;
-            }
-
-            const date =
-                new Date(transaction.date);
-
-            return (
-                date.getMonth() === month &&
-                date.getFullYear() === year
-            );
-
-        })
-
-        .reduce(
-            (total, transaction) =>
-                total + transaction.amount,
-            0
-        );
-}
-function calculateYearlyIncome() {
-
-    const year =
-        new Date().getFullYear();
-
-
-    return transactions
-
-        .filter(transaction => {
-
-            if (
-                transaction.type !== "income"
-            ) {
-                return false;
-            }
-
-            const date =
-                new Date(transaction.date);
-
-            return (
-                date.getFullYear() === year
-            );
-
-        })
-
-        .reduce(
-            (total, transaction) =>
-                total + transaction.amount,
-            0
-        );
-}
-function calculateYearlyExpenses() {
-
-    const year =
-        new Date().getFullYear();
-
-
-    return transactions
-
-        .filter(transaction => {
-
-            if (
-                transaction.type !== "expense"
-            ) {
-                return false;
-            }
-
-            const date =
-                new Date(transaction.date);
-
-            return (
-                date.getFullYear() === year
-            );
-
-        })
-
-        .reduce(
-            (total, transaction) =>
-                total + transaction.amount,
-            0
-        );
-}
-
-function calculateExpenses() {
-
-    return transactions
-
-        .filter(
-            transaction =>
-                transaction.type === "expense"
-        )
-
-        .reduce(
-
-            (total, transaction) =>
-
-                total + transaction.amount,
-
-            0
-
-        );
-}
-
-
-function calculateBalance() {
-
-    return calculateIncome()
-        -
-        calculateExpenses();
-}
-
-
-// ========================================
-// UPCOMING
-// ========================================
-
-function calculateUpcoming() {
-
-    const subscriptionTotal =
-        calculateMonthlySubscriptions();
-
-
-    const billTotal =
-
-        bills.reduce(
-
-            (total, bill) =>
-
-                total + bill.amount,
-
-            0
-
-        );
-
-
-    return subscriptionTotal
-        +
-        billTotal;
-}
-
-
-// ========================================
-// TRANSACTION RENDERING
-// ========================================
-
-function renderTransactions() {
-
-    const container =
-        document.getElementById(
-            "transactionList"
-        );
-
-
-    if (transactions.length === 0) {
-
-        container.innerHTML =
-            `<p class="empty">
-                No transactions yet.
-            </p>`;
-
-        return;
-    }
-
-
-    container.innerHTML =
-
-        transactions
-
-            .slice(0, 8)
-
-            .map(transaction => {
-
-                const isIncome =
-                    transaction.type === "income";
-
-
-                const sign =
-                    isIncome ? "+" : "-";
-
-
-                const amountClass =
-                    isIncome
-                        ? "amount-income"
-                        : "amount-expense";
-
-
-                return `
-
-                <div class="transaction">
-
-                    <div class="transaction-left">
-
-                        <div class="transaction-icon">
-
-                            ${isIncome ? "↑" : "↓"}
-
-                        </div>
-
-
-                        <div>
-
-                            <div class="transaction-name">
-
-                                ${transaction.name}
-
-                            </div>
-
-
-                            <div class="transaction-category">
-
-                                ${transaction.category}
-                                •
-                                ${transaction.date}
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div>
-
-                        <span
-                            class="${amountClass}"
-                        >
-
-                            ${sign}
-                            ${money(transaction.amount)}
-
-                        </span>
-
-
-                        <button
-                            onclick="
-                                deleteTransaction(
-                                    ${transaction.id}
-                                )
-                            "
-                            style="
-                                margin-left:8px;
-                                padding:5px 8px;
-                                background:#eee;
-                                color:#222;
-                            "
-                        >
-
-                            ×
-
-                        </button>
-
-                    </div>
-
+                <div>
+                    <h1>Crest Financial</h1>
+
+                    <span>
+                        Wealth built with purpose.
+                    </span>
                 </div>
-
-                `;
-
-            })
-
-            .join("");
-}
-
-
-// ========================================
-// BUDGETS
-// ========================================
-
-function renderBudgets() {
-
-    const container =
-        document.getElementById(
-            "budgetList"
-        );
-
-
-    const entries =
-        Object.entries(budgets);
-
-
-    if (entries.length === 0) {
-
-        container.innerHTML = `
-
-            <p class="empty">
-
-                No budgets created yet.
-
-            </p>
-
-        `;
-
-        return;
-
-    }
-
-
-    container.innerHTML =
-
-        entries
-
-            .map(
-                ([category, limit]) => {
-
-
-                    const spent =
-
-                        transactions
-
-                            .filter(
-
-                                transaction =>
-
-                                    transaction.type ===
-                                    "expense"
-
-                                    &&
-
-                                    transaction.category ===
-                                    category
-
-                            )
-
-                            .reduce(
-
-                                (
-                                    total,
-                                    transaction
-                                ) =>
-
-                                    total +
-                                    transaction.amount,
-
-                                0
-
-                            );
-
-
-                    const percentage =
-
-                        Math.min(
-
-                            (
-                                spent /
-                                limit
-                            ) * 100,
-
-                            100
-
-                        );
-
-
-                    const exceeded =
-                        spent > limit;
-
-
-                    return `
-
-                    <div class="budget">
-
-                        <div
-                            class="budget-header"
-                        >
-
-                            <span>
-
-                                ${category}
-
-                            </span>
-
-
-                            <span>
-
-                                ${money(spent)}
-                                /
-                                ${money(limit)}
-
-                            </span>
-
-                        </div>
-
-
-                        <div
-                            class="progress"
-                        >
-
-                            <div
-                                class="progress-bar"
-                                style="
-                                    width:
-                                    ${percentage}%;
-
-                                    background:
-                                    ${
-                                        exceeded
-                                        ? "#c53b3b"
-                                        : "#17181c"
-                                    };
-                                "
-                            ></div>
-
-                        </div>
-
-
-                        ${
-                            exceeded
-
-                            ?
-
-                            `
-
-                            <div
-                                style="
-                                    color:#c53b3b;
-                                    font-size:12px;
-                                    margin-top:5px;
-                                "
-                            >
-
-                                ⚠️ Over budget by
-
-                                ${money(
-                                    spent -
-                                    limit
-                                )}
-
-                            </div>
-
-                            `
-
-                            :
-
-                            `
-
-                            <div
-                                style="
-                                    color:#777;
-                                    font-size:12px;
-                                    margin-top:5px;
-                                "
-                            >
-
-                                ${money(
-                                    limit -
-                                    spent
-                                )}
-
-                                remaining
-
-                            </div>
-
-                            `
-
-                        }
-
-
-                        <div
-                            style="
-                                margin-top:10px;
-                                display:flex;
-                                gap:6px;
-                            "
-                        >
-
-                            <button
-                                onclick="
-                                    editBudget(
-                                        '${category}'
-                                    )
-                                "
-                            >
-
-                                Edit
-
-                            </button>
-
-
-                            <button
-                                onclick="
-                                    deleteBudget(
-                                        '${category}'
-                                    )
-                                "
-                                style="
-                                    background:#eee;
-                                    color:#222;
-                                "
-                            >
-
-                                Delete
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                    `;
-
-                }
-            )
-
-            .join("");
-
-}
-function editBudget(category) {
-
-    const amount =
-        budgets[category];
-
-
-    document
-        .getElementById(
-            "budgetCategory"
-        )
-        .value =
-            category;
-
-
-    document
-        .getElementById(
-            "budgetAmount"
-        )
-        .value =
-            amount;
-
-
-    openBudgetModal();
-
-}
-
-// ========================================
-// SUBSCRIPTIONS
-// ========================================
-
-function renderSubscriptions() {
-
-    const container =
-        document.getElementById(
-            "subscriptionList"
-        );
-
-
-    if (subscriptions.length === 0) {
-
-        container.innerHTML =
-            `<p class="empty">
-                No subscriptions yet.
-            </p>`;
-
-        return;
-    }
-
-
-    const monthly =
-        calculateMonthlySubscriptions();
-
-
-    const yearly =
-        calculateYearlySubscriptions();
-
-
-    container.innerHTML = `
-
-        <div
-            style="
-                background:#f5f5f7;
-                padding:15px;
-                border-radius:12px;
-                margin-bottom:15px;
-            "
-        >
-
-            <div
-                style="
-                    display:flex;
-                    justify-content:space-between;
-                    margin-bottom:5px;
-                "
-            >
-
-                <span>
-                    Monthly
-                </span>
-
-
-                <strong>
-                    ${money(monthly)}
-                </strong>
-
+            </a>
+
+        </div>
+
+        <div class="topbar-actions">
+
+            <div class="app-menu">
+                <button type="button" id="themeMenuButton" class="secondary-button theme-menu-button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="themeMenu" title="Open navigation">
+                    <span class="menu-bars" aria-hidden="true"><span></span><span></span><span></span></span>
+                </button>
+                <div id="themeMenu" class="theme-menu-popover" hidden>
+                    <div class="menu-heading">Navigate</div>
+                    <nav class="menu-nav" aria-label="Crest Financial sections">
+                        <a href="#overview" data-menu-link>Overview</a>
+                        <a href="#activity" data-menu-link>Transactions</a>
+                        <a href="#budgets" data-menu-link>Budgets</a>
+                        <a href="#recurring" data-menu-link>Recurring</a>
+                        <a href="#bills" data-menu-link>Bills</a>
+                        <a href="#goals" data-menu-link>Goals</a>
+                        <a href="#funds" data-menu-link>Funds</a>
+                        <a href="#groups" data-menu-link>Shared expenses</a>
+                        <a href="#income" data-menu-link>Income</a>
+                        <a href="#insights" data-menu-link>Insights</a>
+                    </nav>
+                </div>
             </div>
 
-
-            <div
-                style="
-                    display:flex;
-                    justify-content:space-between;
-                    font-size:13px;
-                    color:#777;
-                "
-            >
-
-                <span>
-                    Estimated yearly
-                </span>
-
-
-                <span>
-                    ${money(yearly)}
-                </span>
-
+            <div class="theme-menu">
+                <button type="button" id="themePickerButton" class="secondary-button theme-menu-button" aria-label="Choose a theme" aria-expanded="false" aria-controls="themePicker" title="Choose a theme">
+                    <span class="moon-icon" aria-hidden="true">☾</span>
+                </button>
+                <div id="themePicker" class="theme-menu-popover theme-picker-popover" hidden>
+                    <div class="menu-heading">Theme</div>
+                    <button type="button" data-theme-option="light">Light</button>
+                    <button type="button" data-theme-option="dark">Dark</button>
+                    <button type="button" data-theme-option="midnight">Midnight</button>
+                    <button type="button" data-theme-option="forest">Forest</button>
+                    <button type="button" data-theme-option="sunset">Sunset</button>
+                    <button type="button" data-theme-option="ocean">Ocean</button>
+                    <button type="button" data-theme-option="slate">Slate</button>
+                    <button type="button" data-theme-option="high-contrast">High contrast</button>
+                    <button type="button" data-theme-option="black-gold">Black &amp; Gold</button>
+                    <button type="button" data-theme-option="white-gold">White &amp; Gold</button>
+                </div>
             </div>
 
         </div>
 
-    `;
+    </header>
 
 
-    container.innerHTML +=
+    <!-- =================================================
+         MAIN
+    ================================================== -->
 
-        subscriptions
+    <main class="container">
 
-            .map(subscription => `
+        <!-- =============================================
+             GREETING
+        ============================================== -->
 
-                <div class="subscription">
+        <section class="greeting" id="overview" data-app-page="overview">
 
+            <p id="greetingText">
+                Good afternoon 👋
+            </p>
+
+            <h2>
+                Wealth built with purpose.
+            </h2>
+
+        </section>
+
+        <!-- =============================================
+             FINANCIAL SUMMARY
+        ============================================== -->
+
+        <section class="summary-grid" data-app-page="overview">
+
+            <article class="summary-card balance-card">
+
+                <div class="summary-label">
+                    Current Balance
+                </div>
+
+                <div
+                    id="balance"
+                    class="summary-value"
+                >
+                    $0.00
+                </div>
+
+                <div
+                    id="balanceChange"
+                    class="summary-description"
+                >
+                    No transactions yet.
+                </div>
+
+            </article>
+
+
+            <article class="summary-card">
+
+                <div class="summary-label">
+                    Income
+                </div>
+
+                <div
+                    id="income"
+                    class="summary-value"
+                >
+                    $0.00
+                </div>
+
+                <div class="summary-description">
+                    This month
+                </div>
+
+            </article>
+
+
+            <article class="summary-card">
+
+                <div class="summary-label">
+                    Expenses
+                </div>
+
+                <div
+                    id="expenses"
+                    class="summary-value"
+                >
+                    $0.00
+                </div>
+
+                <div class="summary-description">
+                    This month
+                </div>
+
+            </article>
+
+
+            <article class="summary-card">
+
+                <div class="summary-label">
+                    Upcoming
+                </div>
+
+                <div
+                    id="upcoming"
+                    class="summary-value"
+                >
+                    $0.00
+                </div>
+
+                <div class="summary-description">
+                    Next 30 days
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <section class="overview-grid" data-app-page="overview" aria-label="Account overview">
+            <article class="overview-panel">
+                <div class="overview-panel-header">
                     <div>
+                        <span class="section-kicker">RECENT</span>
+                        <h2>Recent activity</h2>
+                    </div>
+                    <a href="#activity" data-menu-link>View all</a>
+                </div>
+                <div id="overviewRecentActivity" class="overview-list"></div>
+            </article>
 
-                        <div class="item-title">
+            <article class="overview-panel">
+                <div class="overview-panel-header">
+                    <div>
+                        <span class="section-kicker">DASHBOARD</span>
+                        <h2>Account summary</h2>
+                    </div>
+                </div>
+                <div class="health-list">
+                    <div><span>Transactions</span><strong id="overviewTransactionCount">0</strong></div>
+                    <div><span>Active budgets</span><strong id="overviewBudgetCount">0</strong></div>
+                    <div><span>Upcoming payments</span><strong id="overviewPaymentCount">0</strong></div>
+                </div>
+            </article>
+        </section>
 
-                            ${subscription.name}
+        <!-- CTA Button -->
+        <div class="overview-cta">
+            <button id="ctaAddTransaction" class="cta-button">
+                <span>+</span> Add Your First Transaction
+            </button>
+        </div>
 
+
+        <!-- =============================================
+             ACTIVITY
+        ============================================== -->
+
+        <section class="section" id="activity" data-app-page="activity">
+
+            <div class="section-header">
+
+                <div>
+                    <span class="section-kicker">
+                        ACTIVITY
+                    </span>
+
+                    <h2>
+                        Recent Transactions
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    id="openTransactionButton"
+                    class="primary-button add-button"
+                    aria-label="Add transaction"
+                    title="Add transaction"
+                >
+                    <span aria-hidden="true">+</span>
+                </button>
+
+            </div>
+
+            <div
+                id="transactionList"
+                class="card-list"
+            >
+                <p class="empty">
+                    No transactions yet.
+                </p>
+            </div>
+
+        </section>
+
+
+        <!-- =============================================
+             BUDGETS
+        ============================================== -->
+
+        <section class="section" id="budgets" data-app-page="budgets">
+
+            <div class="section-header">
+
+                <div>
+                    <span class="section-kicker">
+                        PLAN
+                    </span>
+
+                    <h2>
+                        Budgets
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    id="openBudgetButton"
+                    class="primary-button add-button"
+                    aria-label="Add budget"
+                    title="Add budget"
+                >
+                    <span aria-hidden="true">+</span>
+                </button>
+
+            </div>
+
+            <div
+                id="budgetList"
+                class="card-list"
+            ></div>
+
+        </section>
+
+
+        <!-- =============================================
+             SUBSCRIPTIONS
+        ============================================== -->
+
+        <section class="section" id="recurring" data-app-page="recurring">
+
+            <div class="section-header">
+
+                <div>
+                    <span class="section-kicker">
+                        RECURRING
+                    </span>
+
+                    <h2>
+                        Subscriptions
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    id="openSubscriptionButton"
+                    class="primary-button add-button"
+                    aria-label="Add subscription"
+                    title="Add subscription"
+                >
+                    <span aria-hidden="true">+</span>
+                </button>
+
+            </div>
+
+            <div
+                id="subscriptionList"
+                class="card-list"
+            ></div>
+
+        </section>
+
+
+        <!-- =============================================
+             BILLS
+        ============================================== -->
+
+        <section class="section" id="bills" data-app-page="bills">
+
+            <div class="section-header">
+
+                <div>
+                    <span class="section-kicker">
+                        UPCOMING
+                    </span>
+
+                    <h2>
+                        Bills
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    id="openBillButton"
+                    class="primary-button add-button"
+                    aria-label="Add bill"
+                    title="Add bill"
+                >
+                    <span aria-hidden="true">+</span>
+                </button>
+
+            </div>
+
+            <div
+                id="billList"
+                class="card-list"
+            ></div>
+
+        </section>
+
+
+        <!-- =============================================
+             SAVINGS GOALS
+        ============================================== -->
+
+        <section class="section" id="goals" data-app-page="goals">
+
+            <div class="section-header">
+
+                <div>
+                    <span class="section-kicker">
+                        GOALS
+                    </span>
+
+                    <h2>
+                        Savings Goals
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    id="openGoalButton"
+                    class="primary-button add-button"
+                    aria-label="Add savings goal"
+                    title="Add savings goal"
+                >
+                    <span aria-hidden="true">+</span>
+                </button>
+
+            </div>
+
+            <div
+                id="goalList"
+                class="card-list"
+            ></div>
+
+        </section>
+
+
+        <section class="section" id="funds" data-app-page="funds">
+
+            <div class="section-header">
+
+                <div>
+                    <span class="section-kicker">
+                        SAVINGS & BORROWING
+                    </span>
+
+                    <h2>
+                        Funds Overview
+                    </h2>
+
+                    <p class="section-description">
+                        Track savings separately from spending and borrowed money.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="analytics-summary-grid funds-summary-grid">
+
+                <div class="analytics-summary-card">
+                    <span>Goal savings</span>
+                    <strong id="savedFundsTotal">$0.00</strong>
+                </div>
+
+                <div class="analytics-summary-card">
+                    <span>Total Saved</span>
+                    <strong id="microSavingsTotal">$0.00</strong>
+                </div>
+
+                <div class="analytics-summary-card loan-summary-card">
+                    <span>Borrowed balance</span>
+                    <strong id="borrowedFundsTotal">$0.00</strong>
+                </div>
+
+            </div>
+
+            <div class="funds-entry-grid">
+
+                <form id="microSaveForm" class="inline-form">
+                    <div class="form-header">
+                        <h3>Add Save</h3>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="microSaveName">Label</label>
+                            <input id="microSaveName" type="text" maxlength="120" placeholder="Emergency fund save" required>
                         </div>
 
+                        <div class="form-group">
+                            <label for="microSaveAmount">Amount</label>
+                            <input id="microSaveAmount" type="number" min="0.01" max="1000000000" step="0.01" required>
+                        </div>
 
-                        <div class="item-subtitle">
+                        <div class="form-group">
+                            <label for="microSaveDate">Date</label>
+                            <input id="microSaveDate" type="date" required>
+                        </div>
+                    </div>
 
-                    <div class="item-subtitle">
+                    <button type="submit" class="primary-button">Add Save</button>
+                </form>
 
-    ${subscription.active === false
-        ? "Paused"
-        : `${subscription.frequency} • Next payment: ${subscription.date}`
-    }
+                <form id="loanForm" class="inline-form">
+                    <div class="form-header">
+                        <h3>Record Borrowing</h3>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="loanName">Loan Name</label>
+                            <input id="loanName" type="text" maxlength="120" placeholder="Student loan" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="loanAmount">Amount Borrowed</label>
+                            <input id="loanAmount" type="number" min="0.01" max="1000000000" step="0.01" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="loanPayment">Monthly Payment</label>
+                            <input id="loanPayment" type="number" min="0" max="1000000000" step="0.01">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="primary-button">Add Loan</button>
+                </form>
+
+            </div>
+
+            <div class="funds-columns">
+                <div>
+                    <h3>Savings activity</h3>
+                    <div id="savingsList" class="card-list"></div>
+                </div>
+
+                <div>
+                    <h3>Borrowed money</h3>
+                    <div id="loanList" class="card-list"></div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- =============================================
+             SHARED MONEY
+        ============================================== -->
+
+        <section class="section" id="groups" data-app-page="groups">
+
+            <div class="section-header">
+
+                <div>
+                    <span class="section-kicker">
+                        SHARED EXPENSES
+                    </span>
+
+                    <h2>
+                        Shared expenses
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    id="openGroupButton"
+                    class="primary-button add-button"
+                    aria-label="Add shared expense group"
+                    title="Add shared expense group"
+                >
+                    <span aria-hidden="true">+</span>
+                </button>
+
+            </div>
+
+            <div
+                id="groupList"
+                class="card-list"
+            ></div>
+
+        </section>
+
+
+        <!-- =============================================
+             INCOME PLANNING
+        ============================================== -->
+
+        <section class="section" id="income" data-app-page="income">
+
+            <div class="section-header">
+
+                <div>
+                    <span class="section-kicker">
+                        INCOME
+                    </span>
+
+                    <h2>
+                        Income Planning
+                    </h2>
+
+                    <p class="section-description">
+                        Manage your income sources and see
+                        your projected income.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    id="openIncomeButton"
+                    class="primary-button add-button"
+                    aria-label="Add income"
+                    title="Add income"
+                >
+                    <span aria-hidden="true">+</span>
+                </button>
+
+            </div>
+
+
+            <div class="income-summary-grid">
+
+                <div class="mini-card">
+
+                    <span>
+                        Total Monthly Income
+                    </span>
+
+                    <strong id="monthly-income-total">
+                        $0.00
+                    </strong>
+
+                </div>
+
+
+                <div class="mini-card">
+
+                    <span>
+                        Total Yearly Income
+                    </span>
+
+                    <strong id="yearly-income-total">
+                        $0.00
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="inline-form salary-form">
+
+                <div class="form-header">
+
+                    <div>
+                        <h3>
+                            Salary
+                        </h3>
+
+                        <p class="section-description">
+                            Keep your regular salary separate from other income funds.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label for="salary-yearly">
+                            Yearly Salary
+                        </label>
+
+                        <input
+                            id="salary-yearly"
+                            type="number"
+                            min="0"
+                            max="1000000000"
+                            step="0.01"
+                            inputmode="decimal"
+                            placeholder="0.00"
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="salary-monthly">
+                            Monthly Salary
+                        </label>
+
+                        <input
+                            id="salary-monthly"
+                            type="number"
+                            min="0"
+                            max="1000000000"
+                            step="0.01"
+                            inputmode="decimal"
+                            placeholder="0.00"
+                        >
+
+                    </div>
+
+                </div>
+
+                <button
+                    type="button"
+                    id="saveSalaryButton"
+                    class="primary-button"
+                >
+                    Save Salary
+                </button>
+
+            </div>
+
+
+            <div class="income-summary-grid salary-summary-grid">
+
+                <div class="mini-card">
+
+                    <span>
+                        Monthly Salary
+                    </span>
+
+                    <strong id="monthly-salary-total">
+                        $0.00
+                    </strong>
+
+                </div>
+
+                <div class="mini-card">
+
+                    <span>
+                        Yearly Salary
+                    </span>
+
+                    <strong id="yearly-salary-total">
+                        $0.00
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="income-form-container"
+                class="inline-form"
+                hidden
+            >
+
+                <div class="form-header">
+
+                    <h3>
+                        Add Income Source
+                    </h3>
+
+                    <button
+                        type="button"
+                        id="closeIncomeButton"
+                        class="close-button"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label for="income-name">
+                            Income Name
+                        </label>
+
+                        <input
+                            id="income-name"
+                            type="text"
+                            maxlength="100"
+                            autocomplete="off"
+                            placeholder="Salary"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="income-amount">
+                            Amount
+                        </label>
+
+                        <input
+                            id="income-amount"
+                            type="number"
+                            min="0.01"
+                            max="100000000"
+                            step="0.01"
+                            inputmode="decimal"
+                            placeholder="0.00"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="income-frequency">
+                            Frequency
+                        </label>
+
+                        <select id="income-frequency">
+
+                            <option value="monthly">
+                                Monthly
+                            </option>
+
+                            <option value="weekly">
+                                Weekly
+                            </option>
+
+                            <option value="yearly">
+                                Yearly
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    id="saveIncomeButton"
+                    class="primary-button"
+                >
+                    Save Income
+                </button>
+
+            </div>
+
+
+            <div
+                id="income-sources-list"
+                class="card-list"
+            ></div>
+
+        </section>
+
+
+        <!-- =============================================
+             ANALYTICS
+        ============================================== -->
+
+        <section class="section" id="insights" data-app-page="insights">
+
+            <div class="section-header">
+
+                <div>
+
+                    <span class="section-kicker">
+                        YOUR MONEY
+                    </span>
+
+                    <h2>
+                        Analytics
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="analytics-summary-grid">
+
+                <div class="analytics-summary-card">
+
+                    <span>
+                        Monthly Income
+                    </span>
+
+                    <strong id="monthlyIncome">
+                        $0.00
+                    </strong>
+
+                </div>
+
+
+                <div class="analytics-summary-card">
+
+                    <span>
+                        Monthly Spending
+                    </span>
+
+                    <strong id="monthlyExpenses">
+                        $0.00
+                    </strong>
+
+                </div>
+
+
+                <div class="analytics-summary-card">
+
+                    <span>
+                        Monthly Savings
+                    </span>
+
+                    <strong id="monthlySavings">
+                        $0.00
+                    </strong>
+
+                </div>
+
+
+                <div class="analytics-summary-card">
+
+                    <span>
+                        Savings Rate
+                    </span>
+
+                    <strong id="savingsRate">
+                        0%
+                    </strong>
+
+                </div>
+
+
+                <div class="analytics-summary-card">
+
+                    <span>
+                        Yearly Income
+                    </span>
+
+                    <strong id="yearlyIncome">
+                        $0.00
+                    </strong>
+
+                </div>
+
+
+                <div class="analytics-summary-card">
+
+                    <span>
+                        Yearly Spending
+                    </span>
+
+                    <strong id="yearlyExpenses">
+                        $0.00
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- Spending Categories -->
+
+            <div class="analytics-panel">
+
+                <h3>
+                    Spending by Category
+                </h3>
+
+                <div
+                    id="categoryAnalytics"
+                    class="analytics-list"
+                >
+                    <p class="empty">
+                        Add expenses to see
+                        your spending breakdown.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <!-- Monthly -->
+
+            <div class="analytics-panel">
+
+                <h3>
+                    Monthly Overview
+                </h3>
+
+                <div
+                    id="monthlyAnalytics"
+                    class="analytics-list"
+                >
+                    <p class="empty">
+                        No monthly data yet.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <!-- Insights -->
+
+            <div class="analytics-panel">
+
+                <h3>
+                    Crest Insights
+                </h3>
+
+                <div
+                    id="financialInsights"
+                    class="insights-list"
+                >
+                    <p class="empty">
+                        Add some transactions and
+                        Crest Financial will analyze them.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Statistics Section -->
+            <div class="analytics-panel">
+                <h3>Key Statistics</h3>
+                <div class="statistics-grid" id="statisticsGrid">
+                    <div class="statistic-card">
+                        <h3>Average Transaction</h3>
+                        <div class="stat-value" id="avgTransaction">$0.00</div>
+                    </div>
+                    <div class="statistic-card">
+                        <h3>Largest Expense</h3>
+                        <div class="stat-value" id="largestExpense">$0.00</div>
+                    </div>
+                    <div class="statistic-card">
+                        <h3>Total Saved</h3>
+                        <div class="stat-value" id="totalSaved">$0.00</div>
+                    </div>
+                    <div class="statistic-card">
+                        <h3>Total Borrowed</h3>
+                        <div class="stat-value" id="totalBorrowed">$0.00</div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- =============================================
+             FINANCIAL CALENDAR
+        ============================================== -->
+
+        <section class="section" data-app-page="bills">
+
+            <div class="section-header">
+
+                <div>
+
+                    <span class="section-kicker">
+                        UPCOMING
+                    </span>
+
+                    <h2>
+                        Financial Calendar
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="calendar-summary-grid">
+
+                <div class="calendar-summary-card">
+
+                    <span>
+                        Next 30 Days
+                    </span>
+
+                    <strong id="upcoming30Days">
+                        $0.00
+                    </strong>
+
+                </div>
+
+
+                <div class="calendar-summary-card">
+
+                    <span class="calendar-status-label due-soon-label">
+                        Attention needed
+                    </span>
+
+                    <span>
+                        Due Soon
+                    </span>
+
+                    <strong id="dueSoonAmount">
+                        $0.00
+                    </strong>
+
+                    <small id="dueSoonCount">
+                        No payments due soon
+                    </small>
+
+                </div>
+
+
+                <div class="calendar-summary-card">
+
+                    <span class="calendar-status-label overdue-label">
+                        Past due
+                    </span>
+
+                    <span>
+                        Overdue
+                    </span>
+
+                    <strong id="overdueAmount">
+                        $0.00
+                    </strong>
+
+                    <small id="overdueCount">
+                        No overdue payments
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div class="analytics-panel">
+
+                <h3>
+                    Upcoming Payments
+                </h3>
+
+                <div
+                    id="calendarPayments"
+                    class="card-list"
+                >
+                    <p class="empty">
+                        No upcoming payments.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
 
 </div>
 
-                    </div>
+
+<!-- =====================================================
+     MODALS
+===================================================== -->
 
 
-                    <div>
+<!-- =====================================================
+     TRANSACTION MODAL
+===================================================== -->
 
-                        <span class="item-price">
-
-                            ${money(subscription.amount)}
-
-                        </span>
-
-
-<button
-    onclick="
-        toggleSubscription(
-            ${subscription.id}
-        )
-    "
-    style="
-        margin-left:4px;
-        padding:5px 8px;
-    "
+<div
+    id="transactionModal"
+    class="modal"
+    aria-hidden="true"
 >
-    ${
-        subscription.active === false
-            ? "Resume"
-            : "Pause"
-    }
-</button>
 
-<button
-    onclick="
-        deleteSubscription(
-            ${subscription.id}
-        )
-    "
-    style="
-        margin-left:4px;
-        padding:5px 8px;
-        background:#eee;
-        color:#222;
-    "
->
-    Delete
-</button>
-
-                    </div>
-
-                </div>
-
-            `)
-
-            .join("");
-}
-
-
-// ========================================
-// BILLS
-// ========================================
-
-function renderBills() {
-
-    const container =
-        document.getElementById(
-            "billList"
-        );
-
-
-    if (bills.length === 0) {
-
-        container.innerHTML =
-            `<p class="empty">
-                No upcoming bills.
-            </p>`;
-
-        return;
-    }
-
-
-    container.innerHTML =
-
-        bills
-
-            .sort(
-                (a, b) =>
-                    new Date(a.date)
-                    -
-                    new Date(b.date)
-            )
-
-            .map(bill => `
-
-                <div class="bill">
-
-                    <div>
-
-                        <div class="item-title">
-
-                            ${bill.name}
-
-                        </div>
-
-
-                        <div class="item-subtitle">
-
-                            Due:
-                            ${bill.date}
-
-                        </div>
-
-                    </div>
-
-
-                    <div>
-
-                        <span class="item-price">
-
-                            ${money(bill.amount)}
-
-                        </span>
-
-
-                        <button
-                            onclick="
-                                deleteBill(
-                                    ${bill.id}
-                                )
-                            "
-                            style="
-                                margin-left:8px;
-                                padding:5px 8px;
-                                background:#eee;
-                                color:#222;
-                            "
-                        >
-
-                            ×
-
-                        </button>
-
-                    </div>
-
-                </div>
-
-            `)
-
-            .join("");
-}
-
-
-// ========================================
-// GOALS
-// ========================================
-
-function renderGoals() {
-
-    const container =
-        document.getElementById(
-            "goalList"
-        );
-
-
-    if (goals.length === 0) {
-
-        container.innerHTML =
-            `<p class="empty">
-
-                Create your first savings goal.
-
-            </p>`;
-
-        return;
-    }
-
-
-    container.innerHTML =
-
-        goals
-
-            .map(goal => {
-
-
-                const percentage =
-
-                    Math.min(
-
-                        (goal.current /
-                        goal.target) *
-                        100,
-
-                        100
-
-                    );
-
-
-                return `
-
-                <div class="goal">
-
-                    <div class="goal-header">
-
-                        <span class="goal-name">
-
-                            ${goal.name}
-
-                        </span>
-
-
-                        <span class="goal-percent">
-
-                            ${Math.round(
-                                percentage
-                            )}%
-
-                        </span>
-
-                    </div>
-
-
-                    <div class="progress">
-
-                        <div
-                            class="progress-bar"
-                            style="
-                                width:${percentage}%;
-                            "
-                        ></div>
-
-                    </div>
-
-
-                    <div class="item-subtitle">
-
-                        ${money(goal.current)}
-
-                        saved of
-
-                        ${money(goal.target)}
-
-
-                        <button
-                            onclick="
-                                deleteGoal(
-                                    ${goal.id}
-                                )
-                            "
-                            style="
-                                margin-left:8px;
-                                padding:4px 7px;
-                                background:#eee;
-                                color:#222;
-                            "
-                        >
-
-                            ×
-
-                        </button>
-
-                    </div>
-
-                </div>
-
-                `;
-
-            })
-
-            .join("");
-}
-
-
-// ========================================
-// DASHBOARD
-// ========================================
-
-function renderDashboard() {
-
-    const income =
-        calculateIncome();
-
-
-    const expenses =
-        calculateExpenses();
-
-
-    const balance =
-        calculateBalance();
-
-
-    const upcoming =
-        calculateUpcoming();
-
-
-    document
-        .getElementById("income")
-        .textContent =
-            money(income);
-
-
-    document
-        .getElementById("expenses")
-        .textContent =
-            money(expenses);
-
-
-    document
-        .getElementById("balance")
-        .textContent =
-            money(balance);
-
-
-    document
-        .getElementById("upcoming")
-        .textContent =
-            money(upcoming);
-
-
-    const balanceMessage =
-        document.getElementById(
-            "balanceChange"
-        );
-
-
-    if (balance > 0) {
-
-        balanceMessage.textContent =
-            "You're currently in the green.";
-
-    }
-
-    else if (balance === 0) {
-
-        balanceMessage.textContent =
-            "Your income and expenses are equal.";
-
-    }
-
-    else {
-
-        balanceMessage.textContent =
-            "You're spending more than you've earned.";
-
-    }
-
-}
-
-
-// ========================================
-// MASTER RENDER
-// ========================================
-
-function render() {
-
-    renderDashboard();
-    renderTransactions();
-    renderBudgets();
-    renderSubscriptions();
-    renderBills();
-    renderGoals();
-    renderGroups();
-    renderAnalytics();
-    renderCalendar();
-
-}
-
-
-// ========================================
-// START
-// ========================================
-
-render();
-// ========================================
-// ANALYTICS
-// ========================================
-
-function renderAnalytics() {
-
-    renderAnalyticsSummary();
-
-    renderCategoryAnalytics();
-
-    renderMonthlyAnalytics();
-
-    renderFinancialInsights();
-
-}
-
-
-// ========================================
-// ANALYTICS SUMMARY
-// ========================================
-
-function renderAnalyticsSummary() {
-
-    const monthlyIncome =
-        calculateMonthlyIncome();
-
-
-    const monthlyExpenses =
-        calculateMonthlyExpenses();
-
-
-    const monthlySavings =
-        monthlyIncome -
-        monthlyExpenses;
-
-
-    const yearlyIncome =
-        calculateYearlyIncome();
-
-
-    const yearlyExpenses =
-        calculateYearlyExpenses();
-
-
-    let savingsPercentage = 0;
-
-
-    if (monthlyIncome > 0) {
-
-        savingsPercentage =
-            (
-                monthlySavings /
-                monthlyIncome
-            ) * 100;
-
-    }
-
-
-    document
-        .getElementById("monthlyIncome")
-        .textContent =
-            money(monthlyIncome);
-
-
-    document
-        .getElementById("monthlyExpenses")
-        .textContent =
-            money(monthlyExpenses);
-
-
-    document
-        .getElementById("monthlySavings")
-        .textContent =
-            money(monthlySavings);
-
-
-    document
-        .getElementById("yearlyIncome")
-        .textContent =
-            money(yearlyIncome);
-
-
-    document
-        .getElementById("yearlyExpenses")
-        .textContent =
-            money(yearlyExpenses);
-
-
-    document
-        .getElementById("savingsRate")
-        .textContent =
-            `${Math.round(
-                savingsPercentage
-            )}%`;
-
-}
-
-
-// ========================================
-// CATEGORY ANALYTICS
-// ========================================
-
-function renderCategoryAnalytics() {
-
-    const container =
-        document.getElementById(
-            "categoryAnalytics"
-        );
-
-
-    const expenses =
-        transactions.filter(
-
-            transaction =>
-                transaction.type === "expense"
-
-        );
-
-
-    if (expenses.length === 0) {
-
-        container.innerHTML =
-            `<p class="empty">
-
-                Add expenses to see
-                your spending breakdown.
-
-            </p>`;
-
-        return;
-
-    }
-
-
-    const categories = {};
-
-
-    expenses.forEach(
-        transaction => {
-
-            if (
-                !categories[
-                    transaction.category
-                ]
-            ) {
-
-                categories[
-                    transaction.category
-                ] = 0;
-
-            }
-
-
-            categories[
-                transaction.category
-            ] += transaction.amount;
-
-        }
-    );
-
-
-    const total =
-        expenses.reduce(
-
-            (sum, transaction) =>
-
-                sum + transaction.amount,
-
-            0
-
-        );
-
-
-    const sortedCategories =
-
-        Object.entries(categories)
-
-            .sort(
-                (a, b) =>
-                    b[1] - a[1]
-            );
-
-
-    container.innerHTML =
-
-        sortedCategories
-
-            .map(
-                ([category, amount]) => {
-
-                    const percentage =
-                        (amount / total) * 100;
-
-
-                    return `
-
-                    <div
-                        class="analytics-row"
-                    >
-
-                        <div
-                            class="analytics-label"
-                        >
-
-                            <span>
-                                ${category}
-                            </span>
-
-                        </div>
-
-
-                        <div
-                            class="
-                                analytics-bar-container
-                            "
-                        >
-
-                            <div
-                                class="analytics-bar"
-                                style="
-                                    width:
-                                    ${percentage}%;
-                                "
-                            ></div>
-
-                        </div>
-
-
-                        <span
-                            class="
-                                analytics-value
-                            "
-                        >
-
-                            ${money(amount)}
-
-                        </span>
-
-                    </div>
-
-                    `;
-
-                }
-            )
-
-            .join("");
-
-}
-
-
-// ========================================
-// MONTHLY ANALYTICS
-// ========================================
-
-function renderMonthlyAnalytics() {
-
-    const container =
-        document.getElementById(
-            "monthlyAnalytics"
-        );
-
-
-    if (transactions.length === 0) {
-
-        container.innerHTML =
-            `<p class="empty">
-
-                No monthly data yet.
-
-            </p>`;
-
-        return;
-
-    }
-
-
-    const months = {};
-
-
-    transactions.forEach(
-        transaction => {
-
-            const date =
-                new Date(
-                    transaction.date
-                );
-
-
-            if (
-                Number.isNaN(
-                    date.getTime()
-                )
-            ) {
-
-                return;
-
-            }
-
-
-            const month =
-                date.toLocaleString(
-                    "en-US",
-                    {
-                        month: "long",
-                        year: "numeric"
-                    }
-                );
-
-
-            if (!months[month]) {
-
-                months[month] = {
-
-                    income: 0,
-
-                    expenses: 0
-
-                };
-
-            }
-
-
-            if (
-                transaction.type ===
-                "income"
-            ) {
-
-                months[month].income +=
-                    transaction.amount;
-
-            }
-
-            else {
-
-                months[month].expenses +=
-                    transaction.amount;
-
-            }
-
-        }
-    );
-
-
-    container.innerHTML =
-
-        Object.entries(months)
-
-            .map(
-                ([month, data]) => `
-
-                <div
-                    class="analytics-row"
+    <div
+        class="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="transactionModalTitle"
+    >
+
+        <div class="modal-header">
+
+            <h2 id="transactionModalTitle">
+                Add Transaction
+            </h2>
+
+            <button
+                type="button"
+                class="close-button"
+                data-close-modal="transactionModal"
+                aria-label="Close"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form id="transactionForm">
+
+            <div class="form-group">
+
+                <label for="transactionName">
+                    Description
+                </label>
+
+                <input
+                    id="transactionName"
+                    type="text"
+                    maxlength="120"
+                    required
+                    autocomplete="off"
+                    placeholder="e.g. Groceries"
                 >
 
-                    <div>
-
-                        <strong>
-                            ${month}
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span
-                            class="amount-income"
-                        >
-
-                            +${money(
-                                data.income
-                            )}
-
-                        </span>
-
-
-                        &nbsp;
-
-
-                        <span
-                            class="amount-expense"
-                        >
-
-                            -${money(
-                                data.expenses
-                            )}
-
-                        </span>
-
-                    </div>
-
-                </div>
-
-                `
-            )
-
-            .join("");
-
-}
-// ========================================
-// FINANCIAL CALENDAR
-// ========================================
-
-function getToday() {
-
-    const today = new Date();
-
-    today.setHours(
-        0,
-        0,
-        0,
-        0
-    );
-
-    return today;
-
-}
-
-
-// ========================================
-// PARSE PAYMENT DATE
-// ========================================
-
-function parsePaymentDate(dateString) {
-
-    if (!dateString) {
-
-        return null;
-
-    }
-
-
-    const date =
-        new Date(dateString);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return null;
-
-    }
-
-
-    date.setHours(
-        0,
-        0,
-        0,
-        0
-    );
-
-
-    return date;
-
-}
-
-
-// ========================================
-// GET ALL UPCOMING PAYMENTS
-// ========================================
-
-function getUpcomingPayments() {
-
-    const payments = [];
-
-
-    // Bills
-
-    bills.forEach(
-        bill => {
-
-            const date =
-                parsePaymentDate(
-                    bill.date
-                );
-
-
-            if (!date) return;
-
-
-            payments.push({
-
-                id:
-                    `bill-${bill.id}`,
-
-                name:
-                    bill.name,
-
-                amount:
-                    bill.amount,
-
-                date:
-
-                    date,
-
-                type:
-                    "Bill"
-
-            });
-
-        }
-    );
-
-
-    // Subscriptions
-
-   subscriptions.forEach(
-    subscription => {
-
-        if (
-            subscription.active === false
-        ) {
-            return;
-        }
-
-            const date =
-                parsePaymentDate(
-                    subscription.date
-                );
-
-
-            if (!date) return;
-
-
-            payments.push({
-
-                id:
-                    `subscription-${subscription.id}`,
-
-                name:
-                    subscription.name,
-
-                amount:
-                    subscription.amount,
-
-                date:
-                    date,
-
-                type:
-                    "Subscription"
-
-            });
-
-        }
-    );
-
-
-    return payments.sort(
-
-        (a, b) =>
-
-            a.date - b.date
-
-    );
-
-}
-
-
-// ========================================
-// PAYMENT STATUS
-// ========================================
-
-function getPaymentStatus(date) {
-
-    const today =
-        getToday();
-
-
-    const difference =
-        date.getTime()
-        -
-        today.getTime();
-
-
-    const days =
-        Math.ceil(
-            difference /
-            (
-                1000 *
-                60 *
-                60 *
-                24
-            )
-        );
-
-
-    if (days < 0) {
-
-        return {
-
-            text:
-                `${Math.abs(days)} day${
-                    Math.abs(days) === 1
-                    ? ""
-                    : "s"
-                } overdue`,
-
-            className:
-                "status-overdue"
-
-        };
-
-    }
-
-
-    if (days === 0) {
-
-        return {
-
-            text:
-                "Due today",
-
-            className:
-                "status-soon"
-
-        };
-
-    }
-
-
-    if (days <= 7) {
-
-        return {
-
-            text:
-                `Due in ${days} day${
-                    days === 1
-                    ? ""
-                    : "s"
-                }`,
-
-            className:
-                "status-soon"
-
-        };
-
-    }
-
-
-    return {
-
-        text:
-            `Due in ${days} days`,
-
-        className:
-            "status-normal"
-
-    };
-
-}
-
-
-// ========================================
-// CALENDAR SUMMARY
-// ========================================
-
-function renderCalendarSummary() {
-
-    const payments =
-        getUpcomingPayments();
-
-
-    const today =
-        getToday();
-
-
-    const next30Days =
-        new Date(today);
-
-
-    next30Days.setDate(
-        today.getDate() + 30
-    );
-
-
-    let upcomingTotal = 0;
-
-    let dueSoonTotal = 0;
-
-    let overdueTotal = 0;
-
-
-    payments.forEach(
-        payment => {
-
-            const difference =
-                Math.ceil(
-
-                    (
-                        payment.date
-                        -
-                        today
-                    )
-
-                    /
-
-                    (
-                        1000 *
-                        60 *
-                        60 *
-                        24
-                    )
-
-                );
-
-
-            if (
-                difference >= 0 &&
-                payment.date <= next30Days
-            ) {
-
-                upcomingTotal +=
-                    payment.amount;
-
-            }
-
-
-            if (
-                difference >= 0 &&
-                difference <= 7
-            ) {
-
-                dueSoonTotal +=
-                    payment.amount;
-
-            }
-
-
-            if (
-                difference < 0
-            ) {
-
-                overdueTotal +=
-                    payment.amount;
-
-            }
-
-        }
-    );
-
-
-    document
-        .getElementById(
-            "upcoming30Days"
-        )
-        .textContent =
-            money(upcomingTotal);
-
-
-    document
-        .getElementById(
-            "dueSoonAmount"
-        )
-        .textContent =
-            money(dueSoonTotal);
-
-
-    document
-        .getElementById(
-            "overdueAmount"
-        )
-        .textContent =
-            money(overdueTotal);
-
-}
-
-
-// ========================================
-// RENDER PAYMENTS
-// ========================================
-
-function renderCalendarPayments() {
-
-    const container =
-        document.getElementById(
-            "calendarPayments"
-        );
-
-
-    const payments =
-        getUpcomingPayments();
-
-
-    if (
-        payments.length === 0
-    ) {
-
-        container.innerHTML =
-            `<p class="empty">
-
-                No upcoming payments.
-
-            </p>`;
-
-        return;
-
-    }
-
-
-    container.innerHTML =
-
-        payments
-
-            .map(
-                payment => {
-
-                    const status =
-                        getPaymentStatus(
-                            payment.date
-                        );
-
-
-                    const dateText =
-                        payment.date
-                            .toLocaleDateString(
-                                "en-US",
-                                {
-                                    month:
-                                        "short",
-
-                                    day:
-                                        "numeric",
-
-                                    year:
-                                        "numeric"
-                                }
-                            );
-
-
-                    return `
-
-                    <div
-                        class="
-                            calendar-payment
-                        "
-                    >
-
-                        <div
-                            class="
-                                payment-left
-                            "
-                        >
-
-                            <div
-                                class="
-                                    payment-icon
-                                "
-                            >
-
-                                ${
-                                    payment.type ===
-                                    "Bill"
-                                    ? "B"
-                                    : "S"
-                                }
-
-                            </div>
-
-
-                            <div>
-
-                                <div
-                                    class="
-                                        payment-name
-                                    "
-                                >
-
-                                    ${payment.name}
-
-                                </div>
-
-
-                                <div
-                                    class="
-                                        payment-date
-                                    "
-                                >
-
-                                    ${payment.type}
-                                    •
-                                    ${dateText}
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <div
-                            class="
-                                payment-right
-                            "
-                        >
-
-                            <div
-                                class="
-                                    payment-amount
-                                "
-                            >
-
-                                ${money(
-                                    payment.amount
-                                )}
-
-                            </div>
-
-
-                            <div
-                                class="
-                                    payment-status
-                                    ${status.className}
-                                "
-                            >
-
-                                ${status.text}
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    `;
-
-                }
-            )
-
-            .join("");
-
-}
-
-
-// ========================================
-// RENDER CALENDAR
-// ========================================
-
-function renderCalendar() {
-
-    renderCalendarSummary();
-
-    renderCalendarPayments();
-
-}
-
-// ========================================
-// FINANCIAL INSIGHTS
-// ========================================
-
-function renderFinancialInsights() {
-
-    const container =
-        document.getElementById(
-            "financialInsights"
-        );
-
-
-    const income =
-        calculateIncome();
-
-
-    const expenses =
-        calculateExpenses();
-
-
-    const insights = [];
-
-
-    // No transactions
-
-    if (
-        transactions.length === 0
-    ) {
-
-        container.innerHTML =
-            `<p class="empty">
-
-                Add transactions to
-                receive financial insights.
-
-            </p>`;
-
-        return;
-
-    }
-
-
-    // Spending more than income
-
-    if (
-        expenses > income &&
-        income > 0
-    ) {
-
-        insights.push(`
-
-            <div class="insight">
-
-                ⚠️ You're currently spending
-                more than your recorded income.
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="transactionAmount">
+                    Amount
+                </label>
+
+                <input
+                    id="transactionAmount"
+                    type="number"
+                    min="0.01"
+                    max="100000000"
+                    step="0.01"
+                    inputmode="decimal"
+                    required
+                >
 
             </div>
 
-        `);
 
-    }
+            <div class="form-group">
 
+                <label for="transactionType">
+                    Type
+                </label>
 
-    // Positive savings
+                <select
+                    id="transactionType"
+                    required
+                >
 
-    if (
-        income > 0 &&
-        expenses < income
-    ) {
+                    <option value="expense">
+                        Expense
+                    </option>
 
-        const saved =
-            income - expenses;
+                    <option value="income">
+                        Income
+                    </option>
 
-
-        insights.push(`
-
-            <div class="insight">
-
-                💰 You've kept
-                ${money(saved)}
-                of your recorded income
-                after expenses.
+                </select>
 
             </div>
 
-        `);
 
-    }
+            <div class="form-group">
 
+                <label for="transactionCategory">
+                    Category
+                </label>
 
-    // Highest category
+                <select
+                    id="transactionCategory"
+                    required
+                >
 
-    const categoryTotals = {};
+                    <option value="Food">
+                        Food
+                    </option>
 
+                    <option value="Transport">
+                        Transport
+                    </option>
 
-    transactions
+                    <option value="Shopping">
+                        Shopping
+                    </option>
 
-        .filter(
-            transaction =>
-                transaction.type ===
-                "expense"
-        )
+                    <option value="Entertainment">
+                        Entertainment
+                    </option>
 
-        .forEach(
-            transaction => {
+                    <option value="Bills">
+                        Bills
+                    </option>
 
-                categoryTotals[
-                    transaction.category
-                ] =
+                    <option value="Education">
+                        Education
+                    </option>
 
-                    (
-                        categoryTotals[
-                            transaction.category
-                        ] || 0
-                    )
+                    <option value="Other">
+                        Other
+                    </option>
 
-                    +
-
-                    transaction.amount;
-
-            }
-        );
-
-
-    const highestCategory =
-
-        Object.entries(
-            categoryTotals
-        )
-
-        .sort(
-            (a, b) =>
-                b[1] - a[1]
-        )[0];
-
-
-    if (highestCategory) {
-
-        insights.push(`
-
-            <div class="insight">
-
-                📊 Your largest spending
-                category is
-                <strong>
-                    ${highestCategory[0]}
-                </strong>
-
-                at
-                <strong>
-                    ${money(
-                        highestCategory[1]
-                    )}
-                </strong>.
+                </select>
 
             </div>
 
-        `);
 
-    }
+            <div class="modal-actions">
 
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-close-modal="transactionModal"
+                >
+                    Cancel
+                </button>
 
-    // Subscription warning
-
-    const subscriptionTotal =
-        calculateMonthlySubscriptions();
-
-
-    if (
-        income > 0 &&
-        subscriptionTotal >
-        income * 0.10
-    ) {
-
-        insights.push(`
-
-            <div class="insight">
-
-                💳 Your subscriptions
-                currently represent more
-                than 10% of your recorded
-                income.
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Add Transaction
+                </button>
 
             </div>
 
-        `);
+        </form>
 
-    }
+    </div>
 
-
-    // Budget warnings
-
-    Object.entries(budgets)
-
-        .forEach(
-            ([category, limit]) => {
-
-                const spent =
-
-                    transactions
-
-                        .filter(
-                            transaction =>
-
-                                transaction.type ===
-                                "expense"
-
-                                &&
-
-                                transaction.category ===
-                                category
-
-                        )
-
-                        .reduce(
-
-                            (
-                                total,
-                                transaction
-                            ) =>
-
-                                total +
-                                transaction.amount,
-
-                            0
-
-                        );
+</div>
 
 
-                if (
-                    spent > limit
-                ) {
+<!-- =====================================================
+     BUDGET MODAL
+===================================================== -->
 
-                    insights.push(`
+<div
+    id="budgetModal"
+    class="modal"
+    aria-hidden="true"
+>
 
-                        <div
-                            class="insight"
-                        >
+    <div
+        class="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="budgetModalTitle"
+    >
 
-                            🚨 You've exceeded
-                            your
-                            <strong>
-                                ${category}
-                            </strong>
-                            budget by
-                            <strong>
-                                ${money(
-                                    spent -
-                                    limit
-                                )}
-                            </strong>.
+        <div class="modal-header">
 
-                        </div>
+            <h2 id="budgetModalTitle">
+                Add / Edit Budget
+            </h2>
 
-                    `);
+            <button
+                type="button"
+                class="close-button"
+                data-close-modal="budgetModal"
+                aria-label="Close"
+            >
+                ×
+            </button>
 
-                }
-
-            }
-        );
+        </div>
 
 
-    if (
-        insights.length === 0
-    ) {
+        <form id="budgetForm">
 
-        insights.push(`
+            <div class="form-group">
 
-            <div class="insight">
+                <label for="budgetCategory">
+                    Category
+                </label>
 
-                ✅ Your finances are
-                looking good based on
-                the data you've entered.
+                <input
+                    id="budgetCategory"
+                    type="text"
+                    maxlength="50"
+                    required
+                    autocomplete="off"
+                >
 
             </div>
 
-        `);
 
-    }
+            <div class="form-group">
 
+                <label for="budgetAmount">
+                    Monthly Limit
+                </label>
 
-    container.innerHTML =
-        insights.join("");
+                <input
+                    id="budgetAmount"
+                    type="number"
+                    min="0.01"
+                    max="100000000"
+                    step="0.01"
+                    required
+                >
 
-}
-// ========================================
-// BUDGET MANAGEMENT
-// ========================================
+            </div>
 
-function openBudgetModal() {
 
-    document
-        .getElementById("budgetModal")
-        .classList.add("active");
+            <div class="modal-actions">
 
-}
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-close-modal="budgetModal"
+                >
+                    Cancel
+                </button>
 
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Save Budget
+                </button>
 
-// ========================================
-// SAVE / UPDATE BUDGET
-// ========================================
+            </div>
 
-document
-    .getElementById("budgetForm")
-    .addEventListener(
-        "submit",
-        function(event) {
+        </form>
 
-            event.preventDefault();
+    </div>
 
+</div>
 
-            const category =
-                document
-                    .getElementById(
-                        "budgetCategory"
-                    )
-                    .value
-                    .trim();
 
+<!-- =====================================================
+     SUBSCRIPTION MODAL
+===================================================== -->
 
-            const amount =
-                Number(
-                    document
-                        .getElementById(
-                            "budgetAmount"
-                        )
-                        .value
-                );
+<div
+    id="subscriptionModal"
+    class="modal"
+    aria-hidden="true"
+>
 
+    <div
+        class="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="subscriptionModalTitle"
+    >
 
-            if (!category) {
+        <div class="modal-header">
 
-                alert(
-                    "Please enter a category."
-                );
+            <h2 id="subscriptionModalTitle">
+                Add Subscription
+            </h2>
 
-                return;
+            <button
+                type="button"
+                class="close-button"
+                data-close-modal="subscriptionModal"
+                aria-label="Close"
+            >
+                ×
+            </button>
 
-            }
+        </div>
 
 
-            if (amount <= 0) {
+        <form id="subscriptionForm">
 
-                alert(
-                    "Budget must be greater than zero."
-                );
+            <input
+                type="hidden"
+                id="subscriptionEditId"
+                value=""
+            >
 
-                return;
 
-            }
+            <div class="form-group">
 
+                <label for="subscriptionName">
+                    Subscription Name
+                </label>
 
-            budgets[category] =
-                amount;
+                <input
+                    id="subscriptionName"
+                    type="text"
+                    maxlength="100"
+                    required
+                    autocomplete="off"
+                    placeholder="Streaming service"
+                >
 
+            </div>
 
-            saveData();
 
-            render();
+            <div class="form-group">
 
-            this.reset();
+                <label for="subscriptionAmount">
+                    Amount
+                </label>
 
-            closeModal(
-                "budgetModal"
-            );
+                <input
+                    id="subscriptionAmount"
+                    type="number"
+                    min="0.01"
+                    max="100000000"
+                    step="0.01"
+                    required
+                >
 
-        }
-    );
+            </div>
 
 
-// ========================================
-// DELETE BUDGET
-// ========================================
+            <div class="form-group">
 
-function deleteBudget(category) {
+                <label for="subscriptionDate">
+                    First Payment
+                </label>
 
-    const confirmed =
-        confirm(
-            `Delete the ${category} budget?`
-        );
+                <input
+                    id="subscriptionDate"
+                    type="date"
+                    required
+                >
 
+            </div>
 
-    if (!confirmed) return;
 
+            <div class="form-group">
 
-    delete budgets[category];
+                <label for="subscriptionFrequency">
+                    Frequency
+                </label>
 
+                <select
+                    id="subscriptionFrequency"
+                    required
+                >
 
-    saveData();
+                    <option value="monthly">
+                        Monthly
+                    </option>
 
-    render();
+                    <option value="weekly">
+                        Weekly
+                    </option>
 
-}
-// ========================================
-// RECURRING PAYMENT ENGINE
-// ========================================
+                    <option value="yearly">
+                        Yearly
+                    </option>
 
-function getNextPaymentDate(
-    currentDate,
-    frequency
-) {
+                </select>
 
-    const date =
-        new Date(currentDate);
+            </div>
 
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+            <div class="modal-actions">
 
-        return null;
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-close-modal="subscriptionModal"
+                >
+                    Cancel
+                </button>
 
-    }
+                <button
+                    id="subscriptionSubmit"
+                    type="submit"
+                    class="primary-button"
+                >
+                    Add Subscription
+                </button>
 
+            </div>
 
-    if (
-        frequency === "weekly"
-    ) {
+        </form>
 
-        date.setDate(
-            date.getDate() + 7
-        );
+    </div>
 
-    }
+</div>
 
 
-    else if (
-        frequency === "monthly"
-    ) {
+<!-- =====================================================
+     BILL MODAL
+===================================================== -->
 
-        date.setMonth(
-            date.getMonth() + 1
-        );
+<div
+    id="billModal"
+    class="modal"
+    aria-hidden="true"
+>
 
-    }
+    <div
+        class="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="billModalTitle"
+    >
 
+        <div class="modal-header">
 
-    else if (
-        frequency === "yearly"
-    ) {
+            <h2 id="billModalTitle">
+                Add Bill
+            </h2>
 
-        date.setFullYear(
-            date.getFullYear() + 1
-        );
+            <button
+                type="button"
+                class="close-button"
+                data-close-modal="billModal"
+                aria-label="Close"
+            >
+                ×
+            </button>
 
-    }
+        </div>
 
 
-    return date;
+        <form id="billForm">
 
-}
-function updateRecurringPayments() {
+            <div class="form-group">
 
-    const today = getToday();
+                <label for="billName">
+                    Bill Name
+                </label>
 
-    let changed = false;
+                <input
+                    id="billName"
+                    type="text"
+                    maxlength="100"
+                    required
+                    autocomplete="off"
+                >
 
-    subscriptions.forEach(subscription => {
+            </div>
 
-        if (subscription.active === false) {
-            return;
-        }
 
-        let nextDate =
-            parsePaymentDate(subscription.date);
+            <div class="form-group">
 
-        if (!nextDate) {
-            return;
-        }
+                <label for="billAmount">
+                    Amount
+                </label>
 
-        while (nextDate < today) {
+                <input
+                    id="billAmount"
+                    type="number"
+                    min="0.01"
+                    max="100000000"
+                    step="0.01"
+                    required
+                >
 
-            const updatedDate =
-                getNextPaymentDate(
-                    nextDate,
-                    subscription.frequency
-                );
+            </div>
 
-            if (!updatedDate) {
-                return;
-            }
 
-            nextDate = updatedDate;
+            <div class="form-group">
 
-            subscription.date =
-                nextDate
-                    .toISOString()
-                    .split("T")[0];
+                <label for="billDate">
+                    Due Date
+                </label>
 
-            changed = true;
-        }
+                <input
+                    id="billDate"
+                    type="date"
+                    required
+                >
 
-    });
+            </div>
 
-    if (changed) {
-        saveData();
-    }
 
-}
-function editSubscription(id) {
+            <div class="modal-actions">
 
-    const subscription =
-        subscriptions.find(
-            subscription =>
-                subscription.id === id
-        );
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-close-modal="billModal"
+                >
+                    Cancel
+                </button>
 
-    if (!subscription) return;
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Add Bill
+                </button>
 
-    document
-        .getElementById("subscriptionName")
-        .value = subscription.name;
+            </div>
 
-    document
-        .getElementById("subscriptionAmount")
-        .value = subscription.amount;
+        </form>
 
-    document
-        .getElementById("subscriptionDate")
-        .value = subscription.date;
+    </div>
 
-    document
-        .getElementById("subscriptionFrequency")
-        .value = subscription.frequency;
+</div>
 
-    document
-        .getElementById("subscriptionEditId")
-        .value = subscription.id;
 
-    document
-        .getElementById("subscriptionSubmit")
-        .textContent = "Save Changes";
+<!-- =====================================================
+     GOAL MODAL
+===================================================== -->
 
-    
-       openSubscriptionModal();
-    }     
-    function openSubscriptionModal() {
+<div
+    id="goalModal"
+    class="modal"
+    aria-hidden="true"
+>
 
-    document
-        .getElementById("subscriptionEditId")
-        .value = "";
+    <div
+        class="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="goalModalTitle"
+    >
 
-    document
-        .getElementById("subscriptionSubmit")
-        .textContent = "Add Subscription";
+        <div class="modal-header">
 
-    document
-        .getElementById("subscriptionModal")
-        .classList.add("active");
-}
-render();
+            <h2 id="goalModalTitle">
+                Create Savings Goal
+            </h2>
+
+            <button
+                type="button"
+                class="close-button"
+                data-close-modal="goalModal"
+                aria-label="Close"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form id="goalForm">
+
+            <div class="form-group">
+
+                <label for="goalName">
+                    Goal Name
+                </label>
+
+                <input
+                    id="goalName"
+                    type="text"
+                    maxlength="100"
+                    required
+                    autocomplete="off"
+                    placeholder="Emergency fund"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="goalTarget">
+                    Target Amount
+                </label>
+
+                <input
+                    id="goalTarget"
+                    type="number"
+                    min="0.01"
+                    max="100000000"
+                    step="0.01"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="goalCurrent">
+                    Current Savings
+                </label>
+
+                <input
+                    id="goalCurrent"
+                    type="number"
+                    min="0"
+                    max="100000000"
+                    step="0.01"
+                    value="0"
+                    required
+                >
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-close-modal="goalModal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Create Goal
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     GROUP MODAL
+===================================================== -->
+
+<div
+    id="groupModal"
+    class="modal"
+    aria-hidden="true"
+>
+
+    <div
+        class="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="groupModalTitle"
+    >
+
+        <div class="modal-header">
+
+            <h2 id="groupModalTitle">
+                Create Group
+            </h2>
+
+            <button
+                type="button"
+                class="close-button"
+                data-close-modal="groupModal"
+                aria-label="Close"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form id="groupForm">
+
+            <div class="form-group">
+
+                <label for="groupName">
+                    Group Name
+                </label>
+
+                <input
+                    id="groupName"
+                    type="text"
+                    maxlength="100"
+                    required
+                    autocomplete="off"
+                    placeholder="Apartment expenses"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="groupMembers">
+                    Members
+                </label>
+
+                <input
+                    id="groupMembers"
+                    type="text"
+                    maxlength="500"
+                    required
+                    autocomplete="off"
+                    placeholder="Justin, Alex, Sam"
+                >
+
+                <small>
+                    Separate members with commas.
+                        width: 78px;
+                        height: 52px;
+            </div>
+
+                        stroke: url(#crestGold);
+                        stroke-width: 2.5;
+
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-close-modal="groupModal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Create Group
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     GROUP EXPENSE MODAL
+===================================================== -->
+
+<div
+    id="groupExpenseModal"
+    class="modal"
+    aria-hidden="true"
+>
+
+    <div
+        class="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="groupExpenseModalTitle"
+    >
+
+        <div class="modal-header">
+
+            <h2 id="groupExpenseModalTitle">
+                Add Group Expense
+            </h2>
+
+            <button
+                type="button"
+                class="close-button"
+                data-close-modal="groupExpenseModal"
+                aria-label="Close"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form id="groupExpenseForm">
+
+            <input
+                type="hidden"
+                id="expenseGroupId"
+            >
+
+
+            <div class="form-group">
+
+                <label for="groupExpenseName">
+                    Expense Name
+                </label>
+
+                <input
+                    id="groupExpenseName"
+                    type="text"
+                    maxlength="100"
+                    required
+                    autocomplete="off"
+                    placeholder="Dinner"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="groupExpenseAmount">
+                    Amount
+                </label>
+
+                <input
+                    id="groupExpenseAmount"
+                    type="number"
+                    min="0.01"
+                    max="100000000"
+                    step="0.01"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="groupExpensePayer">
+                    Paid By
+                </label>
+
+                <select
+                    id="groupExpensePayer"
+                    required
+                ></select>
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-close-modal="groupExpenseModal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Add Expense
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     SECURITY / ERROR MESSAGE
+===================================================== -->
+
+<div
+    id="toast"
+    class="toast"
+    role="status"
+    aria-live="polite"
+></div>
+
+
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
+
+<script
+    src="app.js"
+    defer
+></script>
+
+</body>
+</html>
